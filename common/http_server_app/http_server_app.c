@@ -39,7 +39,7 @@ static http_post_callback_t    http_post_switch_callback = NULL;
 static http_get_callback_t     http_get_dht11_callback = NULL;
 static http_post_callback_t    http_post_slider_callback = NULL;
 static http_post_callback_t    http_post_wifi_infor_callback = NULL;
-
+static http_get_data_callback_t http_get_data_color_callback = NULL;
 
 /* An HTTP GET html handler */
 static esp_err_t dht11_get_handler(httpd_req_t *req)
@@ -87,6 +87,38 @@ static const httpd_uri_t get_data_dht11 = {
     .uri       = "/get_data_dht11",
     .method    = HTTP_GET,
     .handler   = dht11_data_get_handler,
+    /* Let's pass response string in user
+     * context to demonstrate it's usage */
+    .user_ctx  = "Hello World!"
+};
+
+/* An HTTP GET color handler */
+static esp_err_t color_data_get_handler(httpd_req_t *req)
+{
+    int buf_len = httpd_req_get_url_query_len(req) + 1;
+    if (buf_len > 1)
+    {
+       char* buf = malloc(buf_len);
+        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) 
+        {
+            ESP_LOGI(TAG, "Found URL query => %s", buf);
+            char value[32];
+            /* Get value of expected key from query string */
+            if (httpd_query_key_value(buf, "color", value, sizeof value) == ESP_OK) 
+            {
+                http_get_data_color_callback(value, 6);          
+            }
+        }
+        free(buf);
+    }
+    return ESP_OK;
+
+}
+
+static const httpd_uri_t get_data_color = {
+    .uri       = "/rgb",
+    .method    = HTTP_GET,
+    .handler   = color_data_get_handler,
     /* Let's pass response string in user
      * context to demonstrate it's usage */
     .user_ctx  = "Hello World!"
@@ -197,6 +229,8 @@ void start_webserver(void)
 
         httpd_register_uri_handler(server, &get_dht11);
         httpd_register_uri_handler(server, &get_data_dht11);
+        httpd_register_uri_handler(server, &get_data_color);
+
 
         httpd_register_uri_handler(server, &sw1_post_data);
         httpd_register_uri_handler(server, &slider_post_data);
@@ -232,9 +266,15 @@ void http_set_callback_slider(void *cb)
 {
     http_post_slider_callback = cb;
 }
+
 void http_set_callback_wifi_infor(void *cb)
 {
     http_post_wifi_infor_callback = cb;
+}
+
+void http_set_callback_color(void *cb)
+{
+    http_get_data_color_callback = cb;
 }
 
 

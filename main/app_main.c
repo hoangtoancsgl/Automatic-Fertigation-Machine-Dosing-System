@@ -25,6 +25,8 @@
 #include "output_iot.h"
 #include "ledc_app.h"
 #include "mqtt_client_app.h"
+#include "ws2812b.h"
+
 
 
 char* ssid  = "Hoang Vuong";
@@ -93,11 +95,6 @@ void wifi_init_sta(char* ssid, char* pass)
     
     wifi_config_t wifi_config = {
         .sta = {
-            // .ssid = EXAMPLE_ESP_WIFI_SSID,
-            // .password = EXAMPLE_ESP_WIFI_PASS,
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
 	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
 
             .pmf_cfg = {
@@ -340,6 +337,11 @@ void wifi_infor_data_callback(char *data, int len)
 
 }
 
+void color_data_callback(char* data, int len)
+{
+    printf("RGB: %s\n", data);
+}
+
 void slider_data_callback(char *data, int len)
 {
     char num_str[10];
@@ -388,25 +390,28 @@ void app_main(void)
     //Connect to wifi
     wifi_init_sta(ssid, pass);
 
+    //init callback function
     http_set_callback_switch(switch_data_callback);
     http_set_callback_dht11(dht11_data_callback);
     http_set_callback_slider(slider_data_callback);
     http_set_callback_wifi_infor(wifi_infor_data_callback);
+    http_set_callback_color(color_data_callback);
 
     mqtt_set_callback_data_subscribed(mqtt_event_data_callback);
 
 
     output_io_create(GPIO_NUM_2);
+    ws2812b_init(GPIO_NUM_15, 8);
     // ledc_init();
     // ledc_add_pin(GPIO_NUM_2, 0);
 
 
     start_webserver();  
-    mqtt_app_start();
-    while(1)
-    {
-        mqtt_publish_data("hoangtoancsgl/test", "test");
-        vTaskDelay(1000/portTICK_RATE_MS);
-    }
+    // mqtt_app_start();
+    // while(1)
+    // {
+    //     mqtt_publish_data("hoangtoancsgl/test", "test");
+    //     vTaskDelay(2000/portTICK_RATE_MS);
+    // }
 
 }

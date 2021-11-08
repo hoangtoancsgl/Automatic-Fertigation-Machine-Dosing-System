@@ -7,7 +7,9 @@
     "nvs.h": "c",
     "*.inc": "c",
     "mqtt_client.h": "c",
-    "mqtt_client_app.h": "c"
+    "mqtt_client_app.h": "c",
+    "ws2812b.h": "c",
+    "random": "c"
   },
   "liveServer.settings.port": 5501
 }

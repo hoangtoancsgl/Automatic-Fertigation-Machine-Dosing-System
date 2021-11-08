@@ -111,7 +111,7 @@ input:checked + .slider:before {
       <h3>ESP32 Color Piker</h3>
   </div>
   <input class="jscolor {onFineChange: 'update(this)}" id="rgb">
-  <button onclick="chaneColor">Change</button>
+  <button onclick="ChangeColor()">Change</button>
 </div>
 <br>
 <label>SSID: </label>
@@ -189,12 +189,20 @@ input:checked + .slider:before {
           xhttp2.send("0");
         }
     }
+
     function send_wifi_info()
     {
       var ssid = document.getElementById("ssid").value;
       var pass = document.getElementById("pass").value;
       xhttp2.open("POST", "/wifi_infor", true);
       xhttp2.send(ssid + "@" +pass + "@");
+    }
+
+    function ChangeColor()
+    {
+      var color = document.getElementById('rgb').value;
+      xhttp2.open('GET', '/rgb?color=' + color );
+      xhttp2.send();
     }
  
 </script>
