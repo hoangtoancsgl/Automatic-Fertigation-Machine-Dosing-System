@@ -1,0 +1,202 @@
+<!DOCTYPE HTML><html>
+<head>
+  <title>TEST DASHBOARD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css" integrity="sha384-fnmOCqbTlWIlj8LyTjo7mOUStjsKC4pOpQbqyi7RrhN7udi9RwhKkMHpvLbHG9Sr" crossorigin="anonymous">
+  <link rel="icon" href="data:,">
+  <style>
+    html {font-family: Arial; display: inline-block; text-align: center;}
+    h1 {  font-size: 2rem;}
+    body {  margin: 0;}
+    .topnav { overflow: hidden; background-color: #15033f; color: rgb(255, 0, 0); font-size: 1.7rem; }
+    .content { padding: 20px; }
+    .card { background-color: white; box-shadow: 2px 2px 12px 1px rgba(140,140,140,.5); }
+    .cards { max-width: 700px; margin: 0 auto; display: grid; grid-gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .reading { font-size: 2.8rem; }
+    .timestamp { color: #bebebe; font-size: 1rem; }
+    .card-title{ font-size: 1.2rem; font-weight : bold; }
+    .card.temperature { color: #3915da; }
+    .card.humidity { color: #36c50b; }
+
+    .switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+  </style>
+</head>
+<body>
+  <div class="topnav">
+    <h1>TEST DASHBOARD</h1>
+  </div>
+  <div class="content">
+    <div class="cards">
+      <div class="card temperature">
+        <p class="card-title"><i class="fas fa-thermometer-half"></i>TEMPERATURE</p><p><span class="reading"><span id="t1"></span>&deg;C</span></p><p class="timestamp">Last Reading: <span id="rt1"></span></p>
+      </div>
+      <div class="card humidity">
+        <p class="card-title"><i class="fas fa-tint"></i>HUMIDITY</p><p><span class="reading"><span id="h1"></span>&percnt;</span></p><p class="timestamp">Last Reading: <span id="rh1"></span></p>
+      </div>
+    </div>
+  </div>
+
+<h2>LED Switch</h2>
+<label class="switch" id="sw1">
+    <input type="checkbox" id="myCheck1" onclick="Button1()" checked>
+    <span class="slider round"></span>
+</label>
+
+<div class="slidecontainer">
+  <p>LED Brightness:</p>
+  <input type="range" min="0" max="100" value="1" id="myRange">
+  <p>Value: <span id="demo"></span></p>
+</div>
+
+<div class="piker-container">
+  <div class="row">
+      <h3>ESP32 Color Piker</h3>
+  </div>
+  <input class="jscolor {onFineChange: 'update(this)}" id="rgb">
+  <button onclick="chaneColor">Change</button>
+</div>
+<br>
+<label>SSID: </label>
+<input type="text" id="ssid"> <br><br>
+<label>PASS: </label>
+<input type="text" id="pass"> <br><br>
+<Button onclick="send_wifi_info()">SEND</Button>
+
+</body>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js">
+
+  function update(picker) {
+      document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' + Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);
+  } 
+</script>
+
+<script>
+
+    var xhttp1 = new XMLHttpRequest();
+    var xhttp2 = new XMLHttpRequest();
+
+    var slider = document.getElementById("myRange");
+    var output = document.getElementById("demo");
+    output.innerHTML = slider.value;
+
+    slider.oninput = function() {
+      output.innerHTML = this.value;
+
+      xhttp2.open("POST", "/slider", true);
+      xhttp2.send(this.value);
+    }
+
+    setInterval( function()
+    {
+        xhttp1.open("GET", "/get_data_dht11", true);
+        xhttp1.send();
+    },
+    1000)
+
+    xhttp1.onreadystatechange = function()
+    {
+      if(this.readyState == 4 && this.status == 200)
+      {
+        var Data = this.responseText;
+        var DataJson = JSON.parse(Data);
+
+        console.log("Data: " + Data);
+
+        if(DataJson.temp != null)
+        {
+          document.getElementById("t1").innerHTML = DataJson.temp;
+        }
+
+        if(DataJson.hum != null)
+        {
+          document.getElementById("h1").innerHTML = DataJson.hum;
+        }
+
+      }       
+    }
+
+    function Button1()
+    {
+        var checkBox = document.getElementById("myCheck1");
+        if(checkBox.checked == true)
+        {
+          xhttp2.open("POST", "/switch1", true);
+          xhttp2.send("1");
+        }
+        else
+        {
+          xhttp2.open("POST", "/switch1", true);
+          xhttp2.send("0");
+        }
+    }
+    function send_wifi_info()
+    {
+      var ssid = document.getElementById("ssid").value;
+      var pass = document.getElementById("pass").value;
+      xhttp2.open("POST", "/wifi_infor", true);
+      xhttp2.send(ssid + "@" +pass + "@");
+    }
+ 
+</script>
+</html>
+

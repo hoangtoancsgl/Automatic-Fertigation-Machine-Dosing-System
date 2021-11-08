@@ -1,0 +1,13 @@
+{
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "files.associations": {
+    "input_iot.h": "c",
+    "ledc_app.h": "c",
+    "nvs_flash.h": "c",
+    "nvs.h": "c",
+    "*.inc": "c",
+    "mqtt_client.h": "c",
+    "mqtt_client_app.h": "c"
+  },
+  "liveServer.settings.port": 5501
+}
