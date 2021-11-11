@@ -19,7 +19,7 @@
 static EventGroupHandle_t s_wifi_event_group;
 
 
-//wifi infor
+//wifi infor default 
 static char ssid[100]  = "Hoang Vuong";
 static char pass[100] = "1234567890";
 

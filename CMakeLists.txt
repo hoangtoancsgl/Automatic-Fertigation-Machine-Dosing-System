@@ -6,5 +6,7 @@ include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 set(EXTRA_COMPONENT_DIRS ${CMAKE_CURRENT_LIST_DIR}/common)
 project(wifi_station)
 
-#target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "images/anh.jpg" TEXT)
-target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "html/index.html" TEXT)
+
+#target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "html/index.html" TEXT)
+
+#target_add_binary_data(${CMAKE_PROJECT_NAME}.elf "server_certs/certs.pem" TEXT)

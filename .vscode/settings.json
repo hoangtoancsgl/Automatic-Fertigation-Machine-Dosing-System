@@ -11,7 +11,11 @@
     "ws2812b.h": "c",
     "random": "c",
     "esp_wpa2.h": "c",
-    "esp_netif.h": "c"
+    "esp_netif.h": "c",
+    "cjson.h": "c",
+    "esp_http_client.h": "c",
+    "esp_https_ota.h": "c",
+    "esp_tls.h": "c"
   },
   "liveServer.settings.port": 5501
 }

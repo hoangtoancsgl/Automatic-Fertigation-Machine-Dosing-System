@@ -21,6 +21,7 @@
 #include "mqtt_client_app.h"
 #include "ws2812b.h"
 #include "smart_config.h"
+#include "https_ota.h"
 
 
 static const char *TAG = "DOSING SYSTEM";
@@ -34,8 +35,6 @@ char JSON_buff[100];
     3 => SMART CONFIG
 */
 uint8_t led_state = 2;
-
-
 
 //Event group button press
 #define BIT_SHORT_PRESS 	( 1 << 0 )
@@ -351,6 +350,8 @@ void app_main(void)
 
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
+    xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
+    
     xTimers = xTimerCreate("Timmer_for_button_timeout", 5000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
     // ws2812b_init(GPIO_NUM_15, 8);
