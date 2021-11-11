@@ -1,11 +1,4 @@
-/* WiFi station Example
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -23,121 +16,41 @@
 #include "http_server_app.h"
 #include "cJSON.h"
 #include "output_iot.h"
+#include "input_iot.h"
 #include "ledc_app.h"
 #include "mqtt_client_app.h"
 #include "ws2812b.h"
+#include "smart_config.h"
 
 
+static const char *TAG = "DOSING SYSTEM";
 
-char* ssid  = "Hoang Vuong";
-char* pass = "1234567890";
-
-#define EXAMPLE_ESP_MAXIMUM_RETRY  CONFIG_ESP_MAXIMUM_RETRY
-
-/* FreeRTOS event group to signal when we are connected*/
-static EventGroupHandle_t s_wifi_event_group;
-
-
-#define WIFI_CONNECTED_BIT BIT0
-#define WIFI_FAIL_BIT      BIT1
-
+//buffer for sensor data
 char JSON_buff[100];
 
-static const char *TAG = "wifi station";
+/*LED state for wifi connection:
+    1 => CONNECTED
+    2 => DISCONNECTED
+    3 => SMART CONFIG
+*/
+uint8_t led_state = 2;
 
-static int s_retry_num = 0;
 
-static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
-{
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
-            esp_wifi_connect();
-            s_retry_num++;
-            ESP_LOGI(TAG, "retry to connect to the AP");
-        } else {
-            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
-        }
-        ESP_LOGI(TAG,"connect to the AP fail");
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
-        s_retry_num = 0;
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-    }
-}
 
-void wifi_init_sta(char* ssid, char* pass)
-{
-    s_wifi_event_group = xEventGroupCreate();
+//Event group button press
+#define BIT_SHORT_PRESS 	( 1 << 0 )
+#define BIT_NORMAL_PRESS	( 1 << 1 )
+#define BIT_LONG_PRESS	    ( 1 << 2 )
 
-    ESP_ERROR_CHECK(esp_netif_init());
+#define LED GPIO_NUM_2
 
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
+static EventGroupHandle_t Button_event_group;
 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+//Soft timer for button press
+TimerHandle_t xTimers;
+extern timeoutButton_t timeoutButton_callback;
 
-    esp_event_handler_instance_t instance_any_id;
-    esp_event_handler_instance_t instance_got_ip;
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &event_handler,
-                                                        NULL,
-                                                        &instance_any_id));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &event_handler,
-                                                        NULL,
-                                                        &instance_got_ip));
-    
-    wifi_config_t wifi_config = {
-        .sta = {
-	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-
-            .pmf_cfg = {
-                .capable = true,
-                .required = false
-            },
-        },
-    };
-    strcpy((char*)wifi_config.sta.ssid, ssid);
-    strcpy((char*)wifi_config.sta.password, pass);
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
-
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
-
-    /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
-     * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
-    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
-            WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
-            pdFALSE,
-            pdFALSE,
-            portMAX_DELAY);
-
-    /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
-     * happened. */
-    if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 ssid, pass);
-    } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 ssid, pass);
-    } else {
-        ESP_LOGE(TAG, "UNEXPECTED EVENT");
-    }
-
-    /* The event will not be processed after unregister */
-    // ESP_ERROR_CHECK(esp_event_handler_instance_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, instance_got_ip));
-    // ESP_ERROR_CHECK(esp_event_handler_instance_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, instance_any_id));
-    // vEventGroupDelete(s_wifi_event_group);
-}
-
+//Genarate JSON data from sensor output
 char* GenData(Data myData)
 {
     char str_PH[100];
@@ -186,6 +99,7 @@ char* GenData(Data myData)
     return JSON_buff;
 }
 
+//Webserver event callback
 void switch_data_callback(char *data, int len)
 {
     if(*data == '1')
@@ -195,81 +109,6 @@ void switch_data_callback(char *data, int len)
     else if(*data == '0')
     {
         output_io_set_level(GPIO_NUM_2, 0);
-    }
-
-}
-
-void write_wifi_infor_to_flash(char* ssid, char* pass)
-{
-    printf("\n");
-    printf("Opening Non-Volatile Storage (NVS) handle... ");
-    nvs_handle_t my_handle;
-    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) 
-    {
-        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    } 
-    else 
-    {
-        printf("Done\n");
-        // Write
-        err = nvs_set_str(my_handle, "ssid", ssid);
-        printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
-
-        err = nvs_set_str(my_handle, "pass", pass);
-        printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
-
-        printf("Committing updates in NVS ... ");
-        err = nvs_commit(my_handle);
-        printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
-        nvs_close(my_handle);
-    }
-    
-}
-
-void read_wifi_infor_from_flash()
-{
-    printf("\n");
-    printf("Opening Non-Volatile Storage (NVS) handle... ");
-    nvs_handle_t my_handle;
-    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
-    if (err != ESP_OK) 
-    {
-        printf("Error (%s) opening NVS handle!\n", esp_err_to_name(err));
-    } 
-    else 
-    {
-        printf("Done\n");
-
-        size_t size_ssid;
-        size_t size_pass;
-
-        nvs_get_str(my_handle, "ssid", NULL, &size_ssid);
-        nvs_get_str(my_handle, "pass", NULL, &size_pass);
-        char* SSID = malloc(size_ssid);
-        char* PASS = malloc(size_pass);
-
-        err = nvs_get_str(my_handle, "ssid", SSID, &size_ssid);
-        if(err != ESP_OK)
-        {
-            printf("SSID read Failed!\n");
-        }
-        else 
-        {
-            printf("SSID read Done\n");
-            ssid = SSID;
-        }
-
-        err = nvs_get_str(my_handle, "pass", PASS, &size_pass);
-        if(err != ESP_OK)
-        {
-            printf("PASS read Failed!\n");
-        }
-        else 
-        {
-            printf("PASS read Done\n");
-            pass = PASS;
-        }
     }
 
 }
@@ -361,6 +200,111 @@ void dht11_data_callback(void)
 
 }
 
+void input_even_callback(int pin, uint64_t tick)
+{
+    if(pin == GPIO_NUM_0)
+    {
+        int press_ms = tick*portTICK_PERIOD_MS;
+        BaseType_t  xHigherPriorityTaskWoken = pdFALSE;
+        if(press_ms < 1000)
+        {
+            //short press
+            xEventGroupSetBitsFromISR(Button_event_group, BIT_SHORT_PRESS,  &xHigherPriorityTaskWoken);
+        }
+        else if(press_ms < 2000)
+        {
+            //normal press
+            xEventGroupSetBitsFromISR(Button_event_group, BIT_NORMAL_PRESS,  &xHigherPriorityTaskWoken);
+        }
+        else if(press_ms < 4000)
+        {
+            //long press
+            xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
+
+        }
+    }
+}
+
+void button_timeout_callback(int pin)
+{
+    if(pin == GPIO_NUM_0)
+    {
+        printf("Button 0 timeOut! \n");
+        start_smart_config();
+    }
+}
+
+void vTimerCallback (TimerHandle_t xTimer)
+{
+    uint32_t ID;
+    configASSERT( xTimer );
+    ID = ( uint32_t ) pvTimerGetTimerID( xTimer );
+
+    if(ID == 0)
+    {
+        timeoutButton_callback(BUTTON_0);
+    }
+
+}
+
+void Button_Task( void * pvParameters )
+{
+    while(1)
+    {
+        EventBits_t uxBits = xEventGroupWaitBits(Button_event_group, BIT_LONG_PRESS|BIT_SHORT_PRESS|BIT_NORMAL_PRESS, pdTRUE, pdFALSE, portMAX_DELAY);
+
+        if(uxBits & BIT_SHORT_PRESS)
+        {
+            printf("Short Press! \n");
+        }
+        else if(uxBits & BIT_NORMAL_PRESS)
+        {
+            printf("Normal Press! \n");
+        }
+        else if(uxBits & BIT_LONG_PRESS)
+        {
+            printf("Long Press! \n");
+        }
+
+    }
+}
+
+void Led_task( void * pvParameters )
+{
+    while(1)
+    {
+        switch(led_state)
+        {
+            /*LED state for wifi connection:
+            1 => CONNECTED
+            2 => DISCONNECTED
+            3 => SMART CONFIG
+            */
+            case 1:
+                output_io_set_level(LED, 1);
+                vTaskDelay(100/portTICK_PERIOD_MS);
+                output_io_set_level(LED, 0);
+                vTaskDelay(3000/portTICK_PERIOD_MS);
+                break;
+            case 2:
+                output_io_set_level(LED, 1);
+                vTaskDelay(500/portTICK_PERIOD_MS);
+                output_io_set_level(LED, 0);
+                vTaskDelay(500/portTICK_PERIOD_MS);
+                break;
+            case 3:
+                output_io_set_level(LED, 1);
+                vTaskDelay(100/portTICK_PERIOD_MS);
+                output_io_set_level(LED, 0);
+                vTaskDelay(100/portTICK_PERIOD_MS);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+//MQTT data subscribed callback
 void mqtt_event_data_callback(char *topic, char *mess)
 {
     if(strstr(topic, "123"))
@@ -374,21 +318,15 @@ void app_main(void)
 {
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
+    {
       ESP_ERROR_CHECK(nvs_flash_erase());
       ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
-
-    //Read wifi information form flash
-    read_wifi_infor_from_flash();
-    printf("Data read SSID: %s\n", ssid);
-    printf("Data read PASS: %s\n", pass);
-
-    //Connect to wifi
-    wifi_init_sta(ssid, pass);
+ 
+    //Init wifi
+    initialise_wifi();
 
     //init callback function
     http_set_callback_switch(switch_data_callback);
@@ -399,19 +337,31 @@ void app_main(void)
 
     mqtt_set_callback_data_subscribed(mqtt_event_data_callback);
 
+    start_webserver();
+
+    //Init button and LED for smart config
+    Button_event_group = xEventGroupCreate();
+    input_io_create(GPIO_NUM_0, ANY_EDLE);
+   
+
+    input_set_callback(input_even_callback);
+    input_set_timeoutButton_callback(button_timeout_callback);
 
     output_io_create(GPIO_NUM_2);
-    ws2812b_init(GPIO_NUM_15, 8);
-    // ledc_init();
-    // ledc_add_pin(GPIO_NUM_2, 0);
 
+    xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
+    xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
+    xTimers = xTimerCreate("Timmer_for_button_timeout", 5000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
+    
+    // ws2812b_init(GPIO_NUM_15, 8);
+    // // ledc_init();
+    // // ledc_add_pin(GPIO_NUM_2, 0);
 
-    start_webserver();  
-    // mqtt_app_start();
-    // while(1)
-    // {
-    //     mqtt_publish_data("hoangtoancsgl/test", "test");
-    //     vTaskDelay(2000/portTICK_RATE_MS);
-    // }
+    mqtt_app_start();
+    while(1)
+    {
+        // mqtt_publish_data("hoangtoancsgl/test", "test");
+        vTaskDelay(2000/portTICK_RATE_MS);
+    }
 
 }

@@ -14,7 +14,8 @@ extern TimerHandle_t xTimers;
 static uint64_t _start, _stop, _pressTick;
 
 
-static void IRAM_ATTR gpio_input_handler(void* arg){
+static void IRAM_ATTR gpio_input_handler(void* arg)
+{
     int gpio_num = (uint32_t) arg;
     uint32_t rtc = xTaskGetTickCountFromISR();
 
@@ -23,7 +24,6 @@ static void IRAM_ATTR gpio_input_handler(void* arg){
         _start = rtc;
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         xTimerStartFromISR( xTimers, &xHigherPriorityTaskWoken );
-
     }
     else
     {
@@ -34,7 +34,8 @@ static void IRAM_ATTR gpio_input_handler(void* arg){
         _pressTick = _stop - _start;
         input_calback(gpio_num, _pressTick);
     }
-    // input_calback(gpio_num);
+
+    // input_calback(gpio_num, 123);
 }
 
 void input_io_create(gpio_num_t gpio_num, interrupt_type_edle_t type)

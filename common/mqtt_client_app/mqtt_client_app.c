@@ -28,7 +28,7 @@
 #include "mqtt_client_app.h"
 
 
-static const char *TAG = "MQTT_EXAMPLE";
+static const char *TAG = "MQTT_CLIENT";
 static mqtt_data_callback_t    mqtt_data_callback = NULL;
 esp_mqtt_client_handle_t client;
 
@@ -37,7 +37,6 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
     esp_mqtt_client_handle_t client = event->client;
     int msg_id;
-    // your_context_t *context = event->context;
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
@@ -50,7 +49,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
             break;
         case MQTT_EVENT_DISCONNECTED:
-            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
+            ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED, retry...");
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
