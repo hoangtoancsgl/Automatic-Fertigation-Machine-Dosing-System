@@ -13,6 +13,9 @@
 
 #include "esp_smartconfig.h"
 #include "smart_config.h"
+#include "../mqtt_client_app/mqtt_client_app.h"
+
+
 
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
@@ -138,6 +141,8 @@ void smartconfig_example_task(void * parm)
             led_state = 1;
             smart_config_process = false;
             esp_smartconfig_stop();
+            //Reconnect MQTT
+            mqtt_app_start();
             vTaskDelete(NULL);
         }
     }
@@ -242,8 +247,9 @@ void start_smart_config()
     ESP_ERROR_CHECK( esp_wifi_disconnect() );
     smart_config_process = true;
     ESP_LOGI(TAG, "Disconnected from AP for smart config...");
+    //Smart config mode
     led_state = 3;
-
+    ESP_LOGI(TAG, "Smart config mode...");
     xTaskCreate(smartconfig_example_task, "smartconfig_example_task", 4096, NULL, 0, NULL);
 }
 

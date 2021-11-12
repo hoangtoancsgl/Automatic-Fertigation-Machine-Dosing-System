@@ -229,6 +229,7 @@ void button_timeout_callback(int pin)
     if(pin == GPIO_NUM_0)
     {
         printf("Button 0 timeOut! \n");
+        mqtt_app_stop();
         start_smart_config();
     }
 }
@@ -255,6 +256,9 @@ void Button_Task( void * pvParameters )
         if(uxBits & BIT_SHORT_PRESS)
         {
             printf("Short Press! \n");
+            mqtt_app_stop();
+            OTA_start();
+
         }
         else if(uxBits & BIT_NORMAL_PRESS)
         {
@@ -319,8 +323,8 @@ void app_main(void)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
     {
-      ESP_ERROR_CHECK(nvs_flash_erase());
-      ret = nvs_flash_init();
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
  
@@ -348,10 +352,11 @@ void app_main(void)
 
     output_io_create(GPIO_NUM_2);
 
+    //Tasks for smart cònig
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
-    xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
-    
+
+    //Timer for button
     xTimers = xTimerCreate("Timmer_for_button_timeout", 5000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
     // ws2812b_init(GPIO_NUM_15, 8);
@@ -361,8 +366,8 @@ void app_main(void)
     mqtt_app_start();
     while(1)
     {
-        // mqtt_publish_data("hoangtoancsgl/test", "test");
-        vTaskDelay(2000/portTICK_RATE_MS);
+        mqtt_publish_data("hoangtoancsgl/test", "test");
+        vTaskDelay(10000/portTICK_RATE_MS);
     }
 
 }

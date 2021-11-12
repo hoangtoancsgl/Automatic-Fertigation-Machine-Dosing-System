@@ -28,10 +28,23 @@
 #include "mqtt_client_app.h"
 
 
+
 static const char *TAG = "MQTT_CLIENT";
 static mqtt_data_callback_t    mqtt_data_callback = NULL;
 esp_mqtt_client_handle_t client;
 
+esp_mqtt_client_config_t mqtt_cfg = {
+        .uri = "mqtt://ngoinhaiot.com",
+        .port  = 1111,
+        .username = "hoangtoancsgl",
+        .password = "850B3436127D4E73",
+        .lwt_topic = "hoangtoancsgl/ESP32_online",
+        .lwt_msg = "false",
+        .lwt_qos = 0,
+        .lwt_retain = 0,
+        .keepalive = 10
+
+    };
 
 static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
 {
@@ -84,22 +97,15 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
 void mqtt_app_start(void)
 {
-    esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = "mqtt://ngoinhaiot.com",
-        .port  = 1111,
-        .username = "hoangtoancsgl",
-        .password = "850B3436127D4E73",
-        .lwt_topic = "hoangtoancsgl/ESP32_online",
-        .lwt_msg = "false",
-        .lwt_qos = 0,
-        .lwt_retain = 0,
-        .keepalive = 1
-
-    };
-
     client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(client, ESP_EVENT_ANY_ID, mqtt_event_handler, client);
     esp_mqtt_client_start(client);
+}
+
+void mqtt_app_stop(void)
+{
+    esp_mqtt_client_disconnect(client);
+    esp_mqtt_client_stop(client);
 }
 
 void mqtt_publish_data(char* topic, char* mess)

@@ -11,9 +11,13 @@
 #include "esp_tls.h"
 #include "https_ota.h"
 
+#include "../mqtt_client_app/mqtt_client_app.h"
 
-#define FIRMWARE_VERSION	0.4
+#define FIRMWARE_VERSION	0.5
 #define UPDATE_JSON_URL		"http://hoangtoancsgl.000webhostapp.com/firmware.json"
+
+
+static const char *TAG = "OTA_UPDATE";
 
 // server certificates https://
 extern const char server_cert_pem_start[] asm("_binary_certs_pem_start");
@@ -50,12 +54,11 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
 
 // Check update task
 // downloads every 30sec the json file with the latest firmware
-void check_update_task(void *pvParameter) 
+void Check_update_task(void *pvParameter) 
 {
-	
-	while(1) {
-        
-		printf("Looking for a new firmware...\n");
+	while(1) 
+	{
+		ESP_LOGI(TAG, "Looking for a new firmware...");
 	
 		// configure the esp_http_client
 		esp_http_client_config_t config = {
@@ -71,49 +74,57 @@ void check_update_task(void *pvParameter)
 			
 			// parse the json file	
 			cJSON *json = cJSON_Parse(rcv_buffer);
-			if(json == NULL) printf("downloaded file is not a valid json, aborting...\n");
+			if(json == NULL) ESP_LOGI(TAG, "downloaded file is not a valid json, aborting...");
 			else {	
 				cJSON *version = cJSON_GetObjectItemCaseSensitive(json, "version");
 				cJSON *file = cJSON_GetObjectItemCaseSensitive(json, "file");
 				
 				// check the version
-				if(!cJSON_IsNumber(version)) printf("unable to read new version, aborting...\n");
+				if(!cJSON_IsNumber(version)) ESP_LOGI(TAG, "unable to read new version, aborting...");
 				else {
 					
 					double new_version = version->valuedouble;
 					if(new_version > FIRMWARE_VERSION) {
 						
-						printf("current firmware version (%.1f) is lower than the available one (%.1f), upgrading...\n", FIRMWARE_VERSION, new_version);
+						ESP_LOGI(TAG, "New firmware available");
 						if(cJSON_IsString(file) && (file->valuestring != NULL)) {
-							printf("downloading and installing new firmware (%s)...\n", file->valuestring);
+							ESP_LOGI(TAG, "downloading and installing new firmware (%s)...\n", file->valuestring);
 
-							
 							esp_http_client_config_t ota_client_config = {
 								.url = file->valuestring,
 								.cert_pem = server_cert_pem_start,
 							};
 							esp_err_t ret = esp_https_ota(&ota_client_config);
 							if (ret == ESP_OK) {
-								printf("OTA OK, restarting...\n");
+								ESP_LOGI(TAG, "OTA OK, restarting...");
 								esp_restart();
 							} else {
-								printf("OTA failed...\n");
+								ESP_LOGI(TAG, "OTA failed...");
 							}
 						}
-						else printf("unable to read the new file name, aborting...\n");
+						else ESP_LOGI(TAG, "Unable to read the new file name, aborting...");
 					}
-					else printf("current firmware version (%.1f) is greater or equal to the available one (%.1f), nothing to do...\n", FIRMWARE_VERSION, new_version);
+					else ESP_LOGI(TAG, "Current firmware version is lower or equal than the available one, nothing to do...");
 				}
 			}
 		}
-		else printf("unable to download the json file, aborting...\n");
+		else ESP_LOGI(TAG, "Unable to download the json file, aborting...");
 		
-		// cleanup
-		esp_http_client_cleanup(client);
-		
-		printf("\n");
-        vTaskDelay(30000 / portTICK_PERIOD_MS);
+		// cleanup and restart MQTT
+		esp_http_client_cleanup(client);	
+		mqtt_app_start();	
+
+        vTaskDelete(NULL);
     }
 }
 
-// xTaskCreate(&check_update_task, "check_update_task", 8192, NULL, 5, NULL);
+TaskHandle_t xHandle = NULL;
+
+void OTA_start(void)
+{
+	xTaskCreate(Check_update_task, "check_update_task", 8192, NULL, 0, &xHandle);
+}
+void OTA_stop(void)
+{
+	vTaskDelete(xHandle);
+}
