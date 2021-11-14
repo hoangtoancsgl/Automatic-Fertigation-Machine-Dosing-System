@@ -15,7 +15,8 @@
     "cjson.h": "c",
     "esp_http_client.h": "c",
     "esp_https_ota.h": "c",
-    "esp_tls.h": "c"
+    "esp_tls.h": "c",
+    "esp_adc_cal.h": "c"
   },
   "liveServer.settings.port": 5501
 }
