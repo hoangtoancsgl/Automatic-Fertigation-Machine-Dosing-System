@@ -23,6 +23,7 @@
 #include "smart_config.h"
 #include "https_ota.h"
 #include "adc.h"
+#include "ds18b20.h"
 
 
 
@@ -37,15 +38,15 @@ char JSON_buff[100];
     3 => SMART CONFIG
 */
 uint8_t led_state = 2;
+#define LED GPIO_NUM_2
+
 
 //Event group button press
 #define BIT_SHORT_PRESS 	( 1 << 0 )
 #define BIT_NORMAL_PRESS	( 1 << 1 )
 #define BIT_LONG_PRESS	    ( 1 << 2 )
-
-#define LED GPIO_NUM_2
-
 static EventGroupHandle_t Button_event_group;
+
 
 //Soft timer for button press
 TimerHandle_t xTimers;
@@ -285,13 +286,15 @@ void Button_Task( void * pvParameters )
     }
 }
 
-void Read_sensor( void * pvParameters)
+void Read_sensor_task( void * pvParameters)
 {
     while(1)
     {
         printf("TDS sensor value: %d\n", adc_read_tds_sensor());
         printf("PH sensor value: %d\n", adc_read_ph_sensor());
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+        printf("Temperature: %0.2f\n",ds18b20_get_temp());
+
+        vTaskDelay(5000/portTICK_PERIOD_MS);
     }
 }
 
@@ -334,7 +337,7 @@ void Mqtt_communication( void * pvParameters)
 {
     while(1)
     {
-        mqtt_publish_data("hoangtoancsgl/test", "test");
+        //mqtt_publish_data("hoangtoancsgl/test", "test");
         vTaskDelay(5000/portTICK_RATE_MS);
     }
 }
@@ -367,14 +370,13 @@ void app_main(void)
     //start webserver, used to config wifi when smart config fail
     start_webserver();
 
-    //init button and LED for smart config
+    //init button and LED indicator for smart config
     Button_event_group = xEventGroupCreate();
     input_io_create(GPIO_NUM_0, ANY_EDLE);
    
     input_set_callback(input_even_callback);
     input_set_timeoutButton_callback(button_timeout_callback);
 
-    //LED indicator
     output_io_create(GPIO_NUM_2);
 
     //Tasks for smart config
@@ -384,16 +386,13 @@ void app_main(void)
     //Timer for button, time out = 5s
     xTimers = xTimerCreate("Timmer_for_button_timeout", 5000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
-
-    //int adc
+    //int sensors 
     init_adc1();
-    xTaskCreate(Read_sensor, "Read_sensor_task", 2048, NULL, 3, NULL);
+    ds18b20_init(4);
+    xTaskCreate(Read_sensor_task, "Read_sensor_task", 2048, NULL, 3, NULL);
 
     //init and start MQTT communication
     mqtt_app_start();
-    xTaskCreate(Mqtt_communication, "Mqtt_task", 2048, NULL, 3, NULL);
+    xTaskCreate(Mqtt_communication, "Mqtt_communication", 2048, NULL, 3, NULL);
 
-    // ws2812b_init(GPIO_NUM_15, 8);
-    // // ledc_init();
-    // // ledc_add_pin(GPIO_NUM_2, 0);
 }

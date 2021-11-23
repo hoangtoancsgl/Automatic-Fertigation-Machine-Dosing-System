@@ -60,6 +60,8 @@ void write_wifi_infor_to_flash(char* ssid, char* pass)
         err = nvs_commit(my_handle);
         // printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
         nvs_close(my_handle);
+        if(err == ESP_OK) 
+            ESP_LOGI(TAG, "DONE!");
     }
     
 }
