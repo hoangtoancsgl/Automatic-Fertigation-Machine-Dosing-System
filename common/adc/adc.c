@@ -13,8 +13,8 @@
 
 static esp_adc_cal_characteristics_t *adc_chars;
 
-static const adc_channel_t TDS_sensor = ADC_CHANNEL_6; 
-static const adc_channel_t PH_sensor = ADC_CHANNEL_7;    //GPIO34 
+static const adc_channel_t TDS_sensor = ADC_CHANNEL_6; //GPIO34 
+static const adc_channel_t PH_sensor = ADC_CHANNEL_7;    
 
 static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 

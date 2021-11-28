@@ -31,6 +31,8 @@
 
 static const char *TAG = "MQTT_CLIENT";
 static mqtt_data_callback_t    mqtt_data_callback = NULL;
+extern uint8_t led_state;
+
 esp_mqtt_client_handle_t client;
 
 esp_mqtt_client_config_t mqtt_cfg = {
@@ -53,16 +55,15 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-            msg_id = esp_mqtt_client_publish(client, "hoangtoancsgl/first_topic", "Hello from ESP32", 0, 1, 0);
-
+            led_state = 4;
             esp_mqtt_client_publish(client, "hoangtoancsgl/ESP32_online", "true", 0, 1, 0);
-            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-
-            msg_id = esp_mqtt_client_subscribe(client, "#", 0);
+            msg_id = esp_mqtt_client_subscribe(client, "hoangtoancsgl/sensors_data", 0);
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
             break;
+            
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED, retry...");
+            led_state = 4;
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
@@ -102,10 +103,11 @@ void mqtt_app_start(void)
     esp_mqtt_client_start(client);
 }
 
-void mqtt_app_stop(void)
+esp_err_t mqtt_app_stop(void)
 {
     esp_mqtt_client_disconnect(client);
-    esp_mqtt_client_stop(client);
+
+    return esp_mqtt_client_stop(client);
 }
 
 void mqtt_publish_data(char* topic, char* mess)

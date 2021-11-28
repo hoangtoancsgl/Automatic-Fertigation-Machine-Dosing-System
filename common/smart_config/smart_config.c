@@ -244,6 +244,7 @@ void initialise_wifi(void)
     ESP_ERROR_CHECK( esp_wifi_start() );
 
 }
+
 void start_smart_config()
 {
     ESP_ERROR_CHECK( esp_wifi_disconnect() );

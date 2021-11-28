@@ -9,14 +9,6 @@ typedef void (*http_get_data_callback_t) (char* dta, int);
 
 typedef void (*http_get_callback_t)(void);
 
-typedef struct Data_Send
-{
-    int PH;
-    int EC;
-    int Pump_state;
-    int temperature;
-    int humidity;
-}Data;
 
 
 void start_webserver(void);

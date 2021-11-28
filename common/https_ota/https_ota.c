@@ -13,7 +13,7 @@
 
 #include "../mqtt_client_app/mqtt_client_app.h"
 
-#define FIRMWARE_VERSION	0.5
+#define FIRMWARE_VERSION	0.7
 #define UPDATE_JSON_URL		"http://hoangtoancsgl.000webhostapp.com/firmware.json"
 
 
