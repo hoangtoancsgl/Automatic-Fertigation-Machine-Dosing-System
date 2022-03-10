@@ -6,3 +6,5 @@ void LCD_home(void);
 void LCD_clearScreen(void);
 void LCD_writeChar(char c);
 void LCD_writeStr(char* str); 
+void Lcd_write_int(int number);
+void LCD_createCustomCharacter (unsigned char *Pattern, const char Location);

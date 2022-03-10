@@ -307,7 +307,7 @@ float ds18b20_get_temp(void) {
         check=ds18b20_RST_PULSE();
         float temp=0;
         temp=(float)(temp1+(temp2*256))/16;
-        return temp;
+		return temp;
       }
       else{return 0;}
 

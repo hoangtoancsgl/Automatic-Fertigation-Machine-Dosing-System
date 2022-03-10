@@ -18,8 +18,12 @@
 
 
 
+
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group;
+
+
+
 
 
 //wifi infor default 
@@ -37,8 +41,74 @@ static bool smart_config_process = false;
 
 static const char *TAG = "SMART_CONFIG";
 
+extern float tds_set_value, tds_deadband_value, ph_deadband_value, ph_set_value;
+
 wifi_config_t wifi_config;
 
+void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, float ph_set_value, float ph_deadband_value)
+{
+    ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to write config value... ");
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) 
+    {
+        ESP_LOGI(TAG, "Error opening NVS handle!");
+    } 
+    else 
+    {
+        err = nvs_set_i16(my_handle, "tds_set_value", (int)tds_set_value);
+        // printf((err != ESP_OK) ? "tds set value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "tds_db_value", (int)tds_deadband_value);
+        // printf((err != ESP_OK) ? "tds deadband value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "ph_set_value", (int)(ph_set_value*10));
+        // printf((err != ESP_OK) ? "ph set value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "ph_db_value", (int)(ph_deadband_value*10));
+        // printf((err != ESP_OK) ? "ph deadband value Failed!\n" : "Done\n");
+
+        // printf("Committing updates in NVS ... ");
+        err = nvs_commit(my_handle);
+        // printf((err != ESP_OK) ? "Failed!\n" : "Done\n");
+        nvs_close(my_handle);
+        if(err == ESP_OK) 
+            ESP_LOGI(TAG, "DONE!");
+    }
+}
+
+void read_config_value_from_flash()
+{
+    ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to read config value... ");
+    nvs_handle_t my_handle;
+    int t=0;
+    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err != ESP_OK) 
+    {
+        ESP_LOGI(TAG, "Error (%s) opening NVS handle!", esp_err_to_name(err));
+    } 
+    else 
+    {
+        err = nvs_get_i16(my_handle, "tds_set_value", &t);
+        // printf((err != ESP_OK) ? "tds set value value Failed!\n" : "Done\n");
+        tds_set_value = t;
+
+        err = nvs_get_i16(my_handle, "tds_db_value", &t);
+        // printf((err != ESP_OK) ? "tds deadband value value Failed!\n" : "Done\n");
+        tds_deadband_value = t;
+        
+        err = nvs_get_i16(my_handle, "ph_set_value", &t);
+        // printf((err != ESP_OK) ? "ph set value value Failed!\n" : "Done\n");
+        ph_set_value = (float)t/10;
+        
+        err = nvs_get_i16(my_handle, "ph_db_value", &t);
+        // printf((err != ESP_OK) ? "ph deadband value value Failed!\n" : "Done\n");
+        ph_deadband_value = (float)t/10;
+
+
+    }
+
+}
 void write_wifi_infor_to_flash(char* ssid, char* pass)
 {
     ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to write wifi infor... ");

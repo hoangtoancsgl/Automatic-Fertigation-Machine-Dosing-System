@@ -30,27 +30,32 @@
 
 static const char *TAG = "DOSING SYSTEM";
 
+//ID for each device
+uint8_t ID[4] = {150, 3, 223, 25};
+
+char *ID_mqtt_status;
+char *ID_mqtt_data;
+
+
 //EC11 encoder for settings
 #define ROT_ENC_A_GPIO 13
 #define ROT_ENC_B_GPIO 14
 
 #define ENABLE_HALF_STEPS true  // Set to true to enable tracking of rotary encoder at half step resolution
-#define RESET_AT          50      // Set to a positive non-zero number to reset the position if this value is exceeded
-#define FLIP_DIRECTION    true  // Set to true to reverse the clockwise/counterclockwise sense
+
 
 //LCD 16x2
 #define LCD_ADDR 0x27
 #define SDA_PIN  26
 #define SCL_PIN  25
-#define LCD_COLS 16
-#define LCD_ROWS 2
+#define LCD_COLS 20
+#define LCD_ROWS 4
 
 
 //Sensor data struct
 typedef struct Data_Send
 {
     float PH;
-    float EC;
     int TDS;
     float temperature;
     
@@ -63,7 +68,7 @@ char JSON_buff[100];
     1 => CONNECTED to wifi
     2 => DISCONNECTED
     3 => SMART CONFIG
-    4=> CONNECTED MQTT
+    4 => MQTT CONNECTED 
 */
 uint8_t led_state = 2;
 #define LED GPIO_NUM_2
@@ -74,6 +79,7 @@ uint8_t led_state = 2;
 #define BIT_NORMAL_PRESS	( 1 << 1 )
 #define BIT_LONG_PRESS	    ( 1 << 2 )
 static EventGroupHandle_t Button_event_group;
+int short_press=0, long_press=0;
 
 
 //Soft timer for button press
@@ -83,28 +89,73 @@ extern timeoutButton_t timeoutButton_callback;
 //Mutex for handle variable data sensors
 SemaphoreHandle_t Sensor_Semaphore = NULL;
 
-//sensors value
-static float temp_value=0 , tds_value=0, ph_value=0, ec_value =0.2;
+//Sensors value
+static float temp_value=0 , tds_value=0, ph_value=0;
 
+//Sensors set value
+float tds_set_value=500, ph_set_value=6.5;
+
+//Sensors deadband value
+float tds_deadband_value=100, ph_deadband_value=0.2;
+
+
+extern float FIRMWARE_VERSION;
+
+char* GenID_mqtt_status(uint8_t ID[])
+{
+    char IDbuff[100];
+    strcat(IDbuff, "hoangtoancsgl/");
+    for(int i=0;i<4;i++)
+    {
+        char temp[3];
+        if(ID[i]<10) 
+        {
+            sprintf(temp, "%d", 0);
+            strcat(IDbuff, temp);
+        }
+        
+        sprintf(temp, "%x", ID[i]);
+        strcat(IDbuff, temp);
+    }
+    strcat(IDbuff, "/status");
+    return IDbuff;
+}
+
+char* GenID_mqtt_data(uint8_t ID[])
+{
+    char IDbuff[100];
+    strcat(IDbuff, "hoangtoancsgl/");
+    for(int i=0;i<4;i++)
+    {
+        char temp[3];
+        if(ID[i]<10) 
+        {
+            sprintf(temp, "%d", 0);
+            strcat(IDbuff, temp);
+        }
+        
+        sprintf(temp, "%x", ID[i]);
+        strcat(IDbuff, temp);
+    }
+    strcat(IDbuff, "/data");
+    return IDbuff;
+}
 //Genarate JSON data from sensor output
 char* GenData(Data myData)
 {
     char str_PH[100];
-    char str_EC[100];
     char str_TDS[100];
     char str_temp[100];
     
     for(int i=0;i<100;i++)
     {
         str_PH[i]=0;
-        str_EC[i]=0;
         str_TDS[i]=0;
         str_temp[i]=0;
         
         JSON_buff[i]=0;
     }
     sprintf(str_PH, "%0.2f", myData.PH);
-    sprintf(str_EC, "%0.2f", myData.EC);
     sprintf(str_TDS, "%d", myData.TDS);
     sprintf(str_temp, "%0.1f", myData.temperature);
    
@@ -113,10 +164,6 @@ char* GenData(Data myData)
     strcat(JSON_buff, "{\"PH\":\"");
 
     strcat(JSON_buff, str_PH);
-    strcat(JSON_buff, "\",");
-
-    strcat(JSON_buff, "\"EC\":\"");
-    strcat(JSON_buff, str_EC);
     strcat(JSON_buff, "\",");
 
     strcat(JSON_buff, "\"TDS\":\"");
@@ -210,7 +257,6 @@ void input_even_callback(int pin, uint64_t tick)
         {
             //long press
             xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
-
         }
     }
 }
@@ -220,9 +266,7 @@ void button_timeout_callback(int pin)
     if(pin == GPIO_NUM_32)
     {
         printf("Button 0 timeOut! \n");
-        esp_err_t t = mqtt_app_stop();
-        if( t == ESP_OK)
-            start_smart_config();
+        long_press =1;
     }
 }
 
@@ -259,9 +303,7 @@ void Button_Task( void * pvParameters )
         if(uxBits & BIT_SHORT_PRESS)
         {
             printf("Short Press! \n");
-            esp_err_t t = mqtt_app_stop();
-            if( t == ESP_OK)
-                OTA_start();
+            short_press=1;
         }
         else if(uxBits & BIT_NORMAL_PRESS)
         {
@@ -278,13 +320,28 @@ void Button_Task( void * pvParameters )
 
 void Read_sensor_task( void * pvParameters)
 {
+    init_adc1();
+
+    //DS18B20 on GPIO 4
+    ds18b20_init(4);
+    
+    float tds_voltage, ph_voltage;
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
-        tds_value = adc_read_tds_sensor();
-        ph_value = adc_read_ph_sensor();
+        tds_voltage = adc_read_tds_sensor();
+        // printf("TDS voltage: %0.3f\n", tds_voltage);
+        ph_voltage = adc_read_ph_sensor();
         temp_value = ds18b20_get_temp();
-        
+        // printf("Temperature: %0.1f\n\n", temp_value);
+
+        float compensationCoefficient=1.0+0.02*(temp_value-25.0);    //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
+        float compensationVolatge=tds_voltage/compensationCoefficient;  //temperature compensation
+
+        tds_value = (133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
+
+        // printf("TDS value: %0.0f ppm\n", tds_value);
+
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
@@ -339,73 +396,349 @@ void Led_task( void * pvParameters )
 
 void Mqtt_communication_task( void * pvParameters)
 {
+    mqtt_app_start();
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
-        Data myData = {ph_value, ec_value, tds_value, temp_value};
+        Data myData = {ph_value, tds_value, temp_value};
 
-        mqtt_publish_data("hoangtoancsgl/sensors_data", GenData(myData));
+        mqtt_publish_data("hoangtoancsgl/1fac1308/data", GenData(myData));
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelay(5000/portTICK_RATE_MS);
     }
 }
 
-void EC11_encoder_task( void * pvParameters)
+void Display_Sensor_Data(float ver, int TDS_Value, int TDS_Set, float PH_Value, float PH_Set, float Temp)
 {
+    LCD_setCursor(1, 0);
+    LCD_writeStr("Dosing System V"); 
+    LCD_writeChar((int)ver + 0x30);
+    LCD_writeStr("."); 
+    LCD_writeChar(10*(ver-(int)ver)+0x30);
+
+    LCD_setCursor(1, 1);
+    LCD_writeStr("TDS: "); 
+    Lcd_write_int(TDS_Value);
+    LCD_writeStr("/"); 
+    Lcd_write_int(TDS_Set);
+    LCD_writeStr(" ppm  "); 
+
+    LCD_setCursor(1, 2);
+    LCD_writeStr("PH : "); 
+    Lcd_write_int((int)PH_Value);
+    LCD_writeStr("."); 
+    Lcd_write_int(10*(PH_Value-(int)PH_Value));
+    LCD_writeStr("/");
+    Lcd_write_int((int)PH_Set);
+    LCD_writeStr("."); 
+    Lcd_write_int(10*(PH_Set-(int)PH_Set));
+    
+    if(Temp < 50)
+    {
+        LCD_setCursor(1, 3);
+        LCD_writeStr("Temp: "); 
+        Lcd_write_int((int)Temp);
+        LCD_writeStr("."); 
+        Lcd_write_int(10*(Temp-(int)Temp));
+        LCD_writeChar(1);
+        LCD_writeStr("C  "); 
+    }
+
+}
+
+void Display_Settings_1(int select)
+{
+    LCD_setCursor(0, select);
+    LCD_writeChar(2);
+
+    for(int j=0;j<4;j++) 
+        if(j != select) 
+        {
+            LCD_setCursor(0, j);
+            LCD_writeChar(32);
+        } 
+}
+
+void Display_sensors_settings()
+{
+    LCD_setCursor(1, 0);
+    LCD_writeStr("TDS level:"); 
+    Lcd_write_int(tds_set_value);
+    LCD_writeStr(" ppm ");
+
+    LCD_setCursor(1, 1);
+    LCD_writeStr("TDS deadband:");
+    Lcd_write_int(tds_deadband_value);
+    LCD_writeStr("   ");
+    
+    LCD_setCursor(1, 2);
+    LCD_writeStr("PH level: "); 
+    Lcd_write_int((int)ph_set_value);
+    LCD_writeStr("."); 
+    Lcd_write_int(10*(ph_set_value-(int)ph_set_value));
+    LCD_writeStr("  "); 
+
+    LCD_setCursor(1, 3);
+    LCD_writeStr("PH deadband: ");
+    Lcd_write_int((int)ph_deadband_value);
+    LCD_writeStr("."); 
+    Lcd_write_int(10*(ph_deadband_value-(int)ph_deadband_value));
+    LCD_writeStr("  ");
+}
+
+void Settings_display_task( void * pvParameters)
+{
+    //Custom character arrow
+    uint8_t arrow_char[8] = {0x00, 0x04, 0x06, 0x1F, 0x06, 0x04, 0x00};
+    //Custom character degree symbol
+    uint8_t degree_char[8] = {0x07, 0x05, 0x07, 0x00, 0x00, 0x00, 0x00};
+    
+    //Init LCD I2C
+    LCD_init(LCD_ADDR, SDA_PIN, SCL_PIN, LCD_COLS, LCD_ROWS);
+
+    LCD_createCustomCharacter(degree_char, 1);
+    LCD_createCustomCharacter(arrow_char, 2);
+
     // Initialise the rotary encoder device with the GPIOs for A and B signals
     rotary_encoder_info_t info = { 0 };
     ESP_ERROR_CHECK(rotary_encoder_init(&info, ROT_ENC_A_GPIO, ROT_ENC_B_GPIO));
     ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, ENABLE_HALF_STEPS));
-#ifdef FLIP_DIRECTION
+
     ESP_ERROR_CHECK(rotary_encoder_flip_direction(&info));
-#endif
+
 
     // Create a queue for events from the rotary encoder driver.
     // Tasks can read from this queue to receive up to date position information.
     QueueHandle_t event_queue = rotary_encoder_create_queue();
     ESP_ERROR_CHECK(rotary_encoder_set_queue(&info, event_queue));
+    rotary_encoder_event_t event = { 0 };
+    static float t_tds = 0, t_ph = 0, t_temp = 0;
+    
+    //Read config value from flash
+    read_config_value_from_flash();
+    
     while(1)
     {
-        // Wait for incoming events on the event queue.
-        rotary_encoder_event_t event = { 0 };
-        if (xQueueReceive(event_queue, &event, 1000 / portTICK_PERIOD_MS) == pdTRUE)
+        if(tds_value != t_tds || ph_value != t_ph || temp_value != t_temp)
         {
-            ESP_LOGI(TAG, "Event: position %d, direction %s", event.state.position,
-                     event.state.direction ? (event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
+            Display_Sensor_Data(FIRMWARE_VERSION, tds_value, tds_set_value, ph_value, ph_set_value, temp_value); 
+            t_tds = tds_value; 
+            t_ph = ph_value; 
+            t_temp = temp_value;
         }
-        else
-        {
-            
-            // Poll current position and direction
-            rotary_encoder_state_t state = { 0 };
-            ESP_ERROR_CHECK(rotary_encoder_get_state(&info, &state));
-            /*
-            ESP_LOGI(TAG, "Poll: position %d, direction %s", state.position,
-                     state.direction ? (state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? "CW" : "CCW") : "NOT_SET");
-            */
-            // Reset the device
-            if (RESET_AT && (state.position >= RESET_AT || state.position <= -RESET_AT))
-            {
-                ESP_LOGI(TAG, "Reset");
-                ESP_ERROR_CHECK(rotary_encoder_reset(&info));
-            }
-        }
-    }
-}
+        vTaskDelay(10/portTICK_PERIOD_MS);
 
-void LCD_task (void * pvParameters)
-{
-    LCD_init(LCD_ADDR, SDA_PIN, SCL_PIN, LCD_COLS, LCD_ROWS);
-    LCD_setCursor(2, 0);
-    LCD_writeStr("Hello World!");
-    int i=0;
-    while(1)
-    {      
-        LCD_setCursor(7, 1);   
-        LCD_writeChar(i+0x30);
-        i++;
-        if(i>9) i=0;
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+        if(short_press)
+        {
+            short_press=0;
+            LCD_clearScreen();
+            int select = 0;
+            xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
+            
+            //first_screen:
+            LCD_clearScreen();
+            LCD_setCursor(1, 0);
+            LCD_writeStr("Sensors Calibration"); 
+            LCD_setCursor(1, 1);
+            LCD_writeStr("Sensors Settings");
+            LCD_setCursor(1, 2);
+            LCD_writeStr("Config Wifi");
+            LCD_setCursor(1, 3);
+            LCD_writeStr("Exit");
+            
+            while(1)
+            {
+                Display_Settings_1(select %4);
+                if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                {
+                    event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                    if(select<0) select=4;
+                    /*
+                    if((select % 6) ==4)
+                    {
+                        LCD_clearScreen();
+                        goto second_screen;
+                    }
+                    else if((select%6==0) && (select>0)) goto first_screen;
+                    */
+                }   
+                if(short_press) 
+                {
+                    short_press = 0;
+                    select = select%4;
+                    LCD_clearScreen();
+                    break;
+                }
+                /*
+                second_screen:
+                LCD_setCursor(1, 0);
+                LCD_writeStr("Update Firmware"); 
+                LCD_setCursor(1, 1);
+                LCD_writeStr("Exit");
+                */
+
+            }
+            switch (select)
+            {
+                //Sensors Calibration
+                case 0:
+                    // read_config_value_from_flash();
+                    break;
+                
+                //Sensors Settings
+                case 1:  
+                    a:   
+                    Display_sensors_settings();
+                    select=0;
+                    while(1)
+                    {
+                        Display_Settings_1(select %4);
+                        if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                        {
+                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                            if(select<0) select=4;
+                        }
+
+                        if(short_press) 
+                        {
+                            short_press = 0;
+                            select = select%4;
+                            switch (select)
+                            {
+                                //TDS set value
+                                case 0:
+                                    Display_Settings_1(0);
+                                    while(1)
+                                    {
+                                        Display_sensors_settings();
+                                        if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                                        {
+                                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? tds_set_value+=10 : (tds_set_value-=10);
+                                            if(tds_set_value<100) tds_set_value=100;
+                                        }
+                                        if(short_press)
+                                        {
+                                            short_press=0;
+                                            break;
+                                        }
+
+                                    }
+                                    break;
+                                
+                                //TDS deadband value
+                                case 1:
+                                    Display_Settings_1(1);
+                                    while(1)
+                                    {
+                                        Display_sensors_settings();
+                                        if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                                        {
+                                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? tds_deadband_value+=5 : (tds_deadband_value-=5);
+                                            if(tds_deadband_value<50) tds_deadband_value=50;
+                                            if(tds_deadband_value>200) tds_deadband_value=200;
+                                        }
+                                        if(short_press)
+                                        {
+                                            short_press=0;
+                                            break;
+                                        }
+
+                                    }
+                                    break;
+                                //PH set value
+                                case 2:
+                                    Display_Settings_1(2);
+                                    while(1)
+                                    {
+                                        Display_sensors_settings();
+                                        if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                                        {
+                                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? ph_set_value+=0.1 : (ph_set_value-=0.1);
+                                            if(ph_set_value<0) ph_set_value=0;
+                                            if(ph_set_value>14) ph_set_value=14;
+                                        }
+                                        if(short_press)
+                                        {
+                                            short_press=0;
+                                            break;
+                                        }
+
+                                    }
+                                    break;
+                                //PH deadband value
+                                case 3:
+                                    Display_Settings_1(3);
+                                    while(1)
+                                    {
+                                        Display_sensors_settings();
+                                        if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                                        {
+                                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? ph_deadband_value+=0.1 : (ph_deadband_value-=0.1);
+                                            if(ph_deadband_value<0) ph_deadband_value=0.1;
+                                            if(ph_deadband_value>0.5) ph_deadband_value=0.5;
+                                        }
+                                        if(short_press)
+                                        {
+                                            short_press=0;
+                                            break;
+                                        }
+
+                                    }
+                                    break;
+                            }
+                            LCD_clearScreen();
+                            goto a;
+
+                        }
+                        if(long_press)
+                        {
+                            long_press=0;
+                            LCD_clearScreen();
+                            write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value);
+                            break;
+                        }
+
+                    }
+                    break;
+                
+                //Config Wifi
+                case 2:
+                    LCD_setCursor(7, 0);
+                    LCD_writeStr("Wifi");
+                    LCD_setCursor(2, 1);
+                    LCD_writeStr("is configuring...");
+                    esp_err_t t = mqtt_app_stop();
+                    if( t == ESP_OK)
+                        start_smart_config();
+                   
+                    while(led_state==3) vTaskDelay(10/portTICK_PERIOD_MS);
+                   
+                    LCD_setCursor(0, 0);
+                    if(led_state==1) 
+                    {
+                        LCD_clearScreen();
+                        LCD_writeStr("      Success!       ");   
+                        vTaskDelay(3000/portTICK_PERIOD_MS);
+                    }
+                    else if(led_state==2)
+                    {
+                        LCD_clearScreen();
+                        LCD_setCursor(8, 0);
+                        LCD_writeStr("Fail!");  
+                        LCD_setCursor(3, 1);
+                        LCD_writeStr("Restart device");
+                        LCD_setCursor(3, 2);
+                        LCD_writeStr("and try again!");
+                        vTaskDelay(5000/portTICK_PERIOD_MS);
+
+                    } 
+                    LCD_clearScreen();
+                    break;  
+            }
+
+            xSemaphoreGive(Sensor_Semaphore);
+        }
+       
     }
 }
 
@@ -447,6 +780,12 @@ void app_main(void)
 
     output_io_create(GPIO_NUM_2);
 
+    //Creat ID for device
+    ID_mqtt_status = GenID_mqtt_status(ID);
+    ID_mqtt_data = GenID_mqtt_data(ID);
+
+
+
     //Tasks for smart config
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
@@ -457,19 +796,14 @@ void app_main(void)
     //Create mutex for sensor data
     Sensor_Semaphore = xSemaphoreCreateMutex();
 
-    //int sensors 
-    init_adc1();
-    ds18b20_init(4);
+    //init sensors 
     xTaskCreate(Read_sensor_task, "Read_sensor_task", 2048, NULL, 3, NULL);
 
     //init and start MQTT communication
-    mqtt_app_start();
     xTaskCreate(Mqtt_communication_task, "Mqtt_communication_task", 4096, NULL, 3, NULL);
 
-    //EC11 encoder task 
-    xTaskCreate(EC11_encoder_task, "EC11_encoder_task", 4096, NULL, 3, NULL);
+    //Settings and display sensor data to LCD
+    xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
 
-    //LCD task 
-    xTaskCreate(LCD_task, "LCD_task", 4096, NULL, 3, NULL);
 
 }

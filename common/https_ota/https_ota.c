@@ -13,12 +13,12 @@
 
 #include "../mqtt_client_app/mqtt_client_app.h"
 
-#define FIRMWARE_VERSION	0.7
+
 #define UPDATE_JSON_URL		"http://hoangtoancsgl.000webhostapp.com/firmware.json"
 
 
 static const char *TAG = "OTA_UPDATE";
-
+float FIRMWARE_VERSION = 1.1;
 // server certificates https://
 extern const char server_cert_pem_start[] asm("_binary_certs_pem_start");
 extern const char server_cert_pem_end[] asm("_binary_certs_pem_end");

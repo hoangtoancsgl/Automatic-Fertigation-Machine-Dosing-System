@@ -60,7 +60,7 @@ static esp_err_t I2C_init(void)
         .scl_io_num = SCL_pin,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = 85000
+        .master.clk_speed = 70000
     };
 	i2c_param_config(I2C_NUM_0, &conf);
 	i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
@@ -123,7 +123,12 @@ void LCD_writeStr(char* str)
         LCD_writeChar(*str++);
     }
 }
-
+void Lcd_write_int(int number)
+{
+	char buffer[11];
+	sprintf(buffer, "%d", number);
+	LCD_writeStr(buffer);
+}
 void LCD_home(void)
 {
     LCD_writeByte(LCD_HOME, LCD_COMMAND);
@@ -134,6 +139,12 @@ void LCD_clearScreen(void)
 {
     LCD_writeByte(LCD_CLEAR, LCD_COMMAND);
     vTaskDelay(2 / portTICK_RATE_MS);                                   // This command takes a while to complete
+}
+
+void LCD_createCustomCharacter (unsigned char *Pattern, const char Location)
+{ 
+    LCD_writeByte(0x40+(Location*8), LCD_COMMAND);                          //Send the Address of CGRAM
+    for (int i=0; i<8; i++) LCD_writeByte(Pattern [ i ], LCD_WRITE);         //Pass the bytes of pattern on LCD 
 }
 
 static void LCD_writeNibble(uint8_t nibble, uint8_t mode)
