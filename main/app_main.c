@@ -30,13 +30,6 @@
 
 static const char *TAG = "DOSING SYSTEM";
 
-//ID for each device
-uint8_t ID[4] = {150, 3, 223, 25};
-
-char *ID_mqtt_status;
-char *ID_mqtt_data;
-
-
 //EC11 encoder for settings
 #define ROT_ENC_A_GPIO 13
 #define ROT_ENC_B_GPIO 14
@@ -63,6 +56,10 @@ typedef struct Data_Send
 
 //buffer for sensors data
 char JSON_buff[100];
+
+//buffer for device ID 
+char data_buff[100];
+char status_buff[100];
 
 /*LED state for wifi connection:
     1 => CONNECTED to wifi
@@ -98,48 +95,9 @@ float tds_set_value=500, ph_set_value=6.5;
 //Sensors deadband value
 float tds_deadband_value=100, ph_deadband_value=0.2;
 
-
 extern float FIRMWARE_VERSION;
 
-char* GenID_mqtt_status(uint8_t ID[])
-{
-    char IDbuff[100];
-    strcat(IDbuff, "hoangtoancsgl/");
-    for(int i=0;i<4;i++)
-    {
-        char temp[3];
-        if(ID[i]<10) 
-        {
-            sprintf(temp, "%d", 0);
-            strcat(IDbuff, temp);
-        }
-        
-        sprintf(temp, "%x", ID[i]);
-        strcat(IDbuff, temp);
-    }
-    strcat(IDbuff, "/status");
-    return IDbuff;
-}
 
-char* GenID_mqtt_data(uint8_t ID[])
-{
-    char IDbuff[100];
-    strcat(IDbuff, "hoangtoancsgl/");
-    for(int i=0;i<4;i++)
-    {
-        char temp[3];
-        if(ID[i]<10) 
-        {
-            sprintf(temp, "%d", 0);
-            strcat(IDbuff, temp);
-        }
-        
-        sprintf(temp, "%x", ID[i]);
-        strcat(IDbuff, temp);
-    }
-    strcat(IDbuff, "/data");
-    return IDbuff;
-}
 //Genarate JSON data from sensor output
 char* GenData(Data myData)
 {
@@ -402,7 +360,7 @@ void Mqtt_communication_task( void * pvParameters)
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
         Data myData = {ph_value, tds_value, temp_value};
 
-        mqtt_publish_data("hoangtoancsgl/1fac1308/data", GenData(myData));
+        mqtt_publish_data(data_buff, GenData(myData));
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelay(5000/portTICK_RATE_MS);
     }
@@ -780,11 +738,6 @@ void app_main(void)
 
     output_io_create(GPIO_NUM_2);
 
-    //Creat ID for device
-    ID_mqtt_status = GenID_mqtt_status(ID);
-    ID_mqtt_data = GenID_mqtt_data(ID);
-
-
 
     //Tasks for smart config
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
@@ -804,6 +757,5 @@ void app_main(void)
 
     //Settings and display sensor data to LCD
     xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
-
 
 }

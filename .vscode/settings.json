@@ -20,7 +20,9 @@
     "adc.h": "c",
     "*.ipp": "c",
     "set": "c",
-    "string_view": "c"
+    "string_view": "c",
+    "array": "c",
+    "string": "c"
   },
   "liveServer.settings.port": 5501,
   "idf.adapterTargetName": "esp32"

@@ -32,7 +32,9 @@
 static const char *TAG = "MQTT_CLIENT";
 static mqtt_data_callback_t    mqtt_data_callback = NULL;
 extern uint8_t led_state;
-extern char *ID_mqtt_status;
+
+extern char data_buff[100];
+extern char status_buff[100];
 
 esp_mqtt_client_handle_t client;
 
@@ -41,7 +43,7 @@ esp_mqtt_client_config_t mqtt_cfg = {
         .port  = 1111,
         .username = "hoangtoancsgl",
         .password = "850B3436127D4E73",
-        .lwt_topic = "hoangtoancsgl/1fac1308/status",
+        .lwt_topic = status_buff,
         .lwt_msg = "offline",
         .lwt_qos = 0,
         .lwt_retain = 0,
@@ -58,9 +60,9 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
             led_state = 4;
-            esp_mqtt_client_publish(client, "hoangtoancsgl/1fac1308/status", "online", 0, 1, 0);
-            msg_id = esp_mqtt_client_subscribe(client, "#", 0);
-            ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+            esp_mqtt_client_publish(client, status_buff, "online", 0, 1, 0);
+            msg_id = esp_mqtt_client_subscribe(client, data_buff, 0);
+            // ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
             break;
             
         case MQTT_EVENT_DISCONNECTED:
@@ -69,15 +71,15 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
-            ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+            // ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
             break;
 
         case MQTT_EVENT_UNSUBSCRIBED:
-            ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+            // ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
             break;
 
         case MQTT_EVENT_PUBLISHED:
-            ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+            // ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
             break;
 
         case MQTT_EVENT_DATA:

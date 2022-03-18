@@ -16,14 +16,12 @@
 #include "../mqtt_client_app/mqtt_client_app.h"
 
 
-
-
-
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t s_wifi_event_group;
 
-
-
+//buffer for generate ID 
+extern char data_buff[100];
+extern char status_buff[100];
 
 
 //wifi infor default 
@@ -109,6 +107,7 @@ void read_config_value_from_flash()
     }
 
 }
+
 void write_wifi_infor_to_flash(char* ssid, char* pass)
 {
     ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to write wifi infor... ");
@@ -203,7 +202,7 @@ void smartconfig_example_task(void * parm)
             memcpy(ssid, wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid));
             memcpy(pass, wifi_config.sta.password, sizeof(wifi_config.sta.password));
 
-            // //Write wifi infor to falsh
+            // //Write wifi infor to flash
             write_wifi_infor_to_flash(ssid, pass);
         }
 
@@ -312,6 +311,31 @@ void initialise_wifi(void)
 
     ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
     ESP_ERROR_CHECK( esp_wifi_start() );
+   
+    uint8_t mac_add[6];    
+    esp_wifi_get_mac(WIFI_IF_STA, mac_add);
+    
+    strcat(status_buff, "hoangtoancsgl/");
+    strcat(data_buff, "hoangtoancsgl/");
+    for(int i=0;i<6;i++)
+    {
+        char temp[3];
+        if(mac_add[i]<10) 
+        {
+            sprintf(temp, "%d", 0);
+            strcat(status_buff, temp);
+            strcat(data_buff, temp);
+        }
+        
+        sprintf(temp, "%x", mac_add[i]);
+        strcat(status_buff, temp);
+        strcat(data_buff, temp);
+    }
+    strcat(status_buff, "/status");
+    strcat(data_buff, "/data");
+
+    // printf("Status: %.*s\r\n", 33, status_buff);
+    // printf("Data: %.*s\r\n", 33, data_buff);
 
 }
 
