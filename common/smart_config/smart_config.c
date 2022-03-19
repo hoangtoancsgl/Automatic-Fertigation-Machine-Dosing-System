@@ -22,6 +22,7 @@ static EventGroupHandle_t s_wifi_event_group;
 //buffer for generate ID 
 extern char data_buff[100];
 extern char status_buff[100];
+extern char mac_buff[12];
 
 
 //wifi infor default 
@@ -325,11 +326,13 @@ void initialise_wifi(void)
             sprintf(temp, "%d", 0);
             strcat(status_buff, temp);
             strcat(data_buff, temp);
+            strcat(mac_buff, temp);
         }
         
         sprintf(temp, "%x", mac_add[i]);
         strcat(status_buff, temp);
         strcat(data_buff, temp);
+        strcat(mac_buff, temp);
     }
     strcat(status_buff, "/status");
     strcat(data_buff, "/data");

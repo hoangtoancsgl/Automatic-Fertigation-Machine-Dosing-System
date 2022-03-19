@@ -18,13 +18,15 @@
 
 
 static const char *TAG = "OTA_UPDATE";
-float FIRMWARE_VERSION = 1.1;
+double FIRMWARE_VERSION = 1.7;
 // server certificates https://
 extern const char server_cert_pem_start[] asm("_binary_certs_pem_start");
 extern const char server_cert_pem_end[] asm("_binary_certs_pem_end");
 
 // receive buffer
 char rcv_buffer[200];
+
+extern uint8_t OTA_status;
 
 // esp_http_client event handler
 esp_err_t _http_event_handler(esp_http_client_event_t *evt) {
@@ -59,6 +61,8 @@ void Check_update_task(void *pvParameter)
 	while(1) 
 	{
 		ESP_LOGI(TAG, "Looking for a new firmware...");
+		OTA_status = 1;
+		vTaskDelay(2000/portTICK_PERIOD_MS);
 	
 		// configure the esp_http_client
 		esp_http_client_config_t config = {
@@ -87,28 +91,54 @@ void Check_update_task(void *pvParameter)
 					if(new_version > FIRMWARE_VERSION) {
 						
 						ESP_LOGI(TAG, "New firmware available");
+						OTA_status = 2;
+						vTaskDelay(2000/portTICK_PERIOD_MS);
+
+
 						if(cJSON_IsString(file) && (file->valuestring != NULL)) {
-							ESP_LOGI(TAG, "downloading and installing new firmware (%s)...\n", file->valuestring);
+
+							ESP_LOGI(TAG, "Downloading and installing new firmware (%s)...\n", file->valuestring);
+							OTA_status = 3;
 
 							esp_http_client_config_t ota_client_config = {
 								.url = file->valuestring,
 								.cert_pem = server_cert_pem_start,
 							};
 							esp_err_t ret = esp_https_ota(&ota_client_config);
+							
 							if (ret == ESP_OK) {
 								ESP_LOGI(TAG, "OTA OK, restarting...");
+								OTA_status = 5;
+								vTaskDelay(5000/portTICK_PERIOD_MS);
 								esp_restart();
 							} else {
+								OTA_status = 6;
+								vTaskDelay(5000/portTICK_PERIOD_MS);
 								ESP_LOGI(TAG, "OTA failed...");
 							}
 						}
-						else ESP_LOGI(TAG, "Unable to read the new file name, aborting...");
+						else 
+						{
+							OTA_status = 6;
+							vTaskDelay(5000/portTICK_PERIOD_MS);
+							ESP_LOGI(TAG, "Unable to read the new file name, aborting...");
+						}
 					}
-					else ESP_LOGI(TAG, "Current firmware version is lower or equal than the available one, nothing to do...");
+					else 
+					{
+						OTA_status = 4;
+						vTaskDelay(5000/portTICK_PERIOD_MS);
+						ESP_LOGI(TAG, "Current firmware version is lower or equal than the available one, nothing to do...");
+					}
 				}
 			}
 		}
-		else ESP_LOGI(TAG, "Unable to download the json file, aborting...");
+		else 
+		{
+			OTA_status = 6;
+			vTaskDelay(5000/portTICK_PERIOD_MS);
+			ESP_LOGI(TAG, "Unable to download the json file, aborting...");
+		}
 		
 		// cleanup and restart MQTT
 		esp_http_client_cleanup(client);	

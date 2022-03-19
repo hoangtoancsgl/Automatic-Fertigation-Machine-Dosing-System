@@ -58,8 +58,10 @@ typedef struct Data_Send
 char JSON_buff[100];
 
 //buffer for device ID 
+char mac_buff[12];
 char data_buff[100];
 char status_buff[100];
+
 
 /*LED state for wifi connection:
     1 => CONNECTED to wifi
@@ -69,6 +71,16 @@ char status_buff[100];
 */
 uint8_t led_state = 2;
 #define LED GPIO_NUM_2
+
+/*OTA variable for OTA update
+1 => Looking for a new firmware
+2 => New firmware available
+3 => Downloading and installing new firmware
+4 => Current firmware is lower or equal availble one
+5 => Update successfull
+6 => Update fail
+*/
+uint8_t OTA_status=0;
 
 
 //Event group button press
@@ -95,7 +107,7 @@ float tds_set_value=500, ph_set_value=6.5;
 //Sensors deadband value
 float tds_deadband_value=100, ph_deadband_value=0.2;
 
-extern float FIRMWARE_VERSION;
+extern double FIRMWARE_VERSION;
 
 
 //Genarate JSON data from sensor output
@@ -298,8 +310,6 @@ void Read_sensor_task( void * pvParameters)
 
         tds_value = (133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
 
-        // printf("TDS value: %0.0f ppm\n", tds_value);
-
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
@@ -493,47 +503,60 @@ void Settings_display_task( void * pvParameters)
             int select = 0;
             xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
             
-            //first_screen:
-            LCD_clearScreen();
+            first_screen:
+            
             LCD_setCursor(1, 0);
             LCD_writeStr("Sensors Calibration"); 
             LCD_setCursor(1, 1);
-            LCD_writeStr("Sensors Settings");
+            LCD_writeStr("Sensors Settings  ");
             LCD_setCursor(1, 2);
             LCD_writeStr("Config Wifi");
             LCD_setCursor(1, 3);
+            LCD_writeStr("Device ID");
+
+            goto next;
+
+            second_screen:
+            LCD_setCursor(1, 0);
+            LCD_writeStr("Update Firmware"); 
+            LCD_setCursor(1, 1);
+            LCD_writeStr("Original Firmware");
+            LCD_setCursor(1, 2);
+            LCD_writeStr("About");
+            LCD_setCursor(1, 3);
             LCD_writeStr("Exit");
             
+            next:
             while(1)
             {
                 Display_Settings_1(select %4);
-                if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
+                if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
                 {
                     event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
-                    if(select<0) select=4;
-                    /*
+                    if(select<0) select=0;
+
                     if((select % 6) ==4)
                     {
                         LCD_clearScreen();
                         goto second_screen;
+                        
                     }
-                    else if((select%6==0) && (select>0)) goto first_screen;
-                    */
+                    else if( (select%4==0) && (select>0) ) 
+                    {
+                        select =0;
+                        LCD_clearScreen();
+                        goto first_screen;
+                    }
+                    if(select==3) goto first_screen;
+
                 }   
                 if(short_press) 
                 {
                     short_press = 0;
-                    select = select%4;
+                    select = select%8;
                     LCD_clearScreen();
                     break;
                 }
-                /*
-                second_screen:
-                LCD_setCursor(1, 0);
-                LCD_writeStr("Update Firmware"); 
-                LCD_setCursor(1, 1);
-                LCD_writeStr("Exit");
-                */
 
             }
             switch (select)
@@ -692,6 +715,134 @@ void Settings_display_task( void * pvParameters)
                     } 
                     LCD_clearScreen();
                     break;  
+                
+                //Device ID
+                case 3:
+                    LCD_setCursor(6, 0);
+                    LCD_writeStr("Device ID");
+                    LCD_setCursor(4, 1);
+                    for(int i=0;i<12;i++) LCD_writeChar(mac_buff[i]);
+                    while(1)
+                    {
+                        if(short_press)
+                        {
+                            short_press=0;
+                            LCD_clearScreen();
+                            break;
+                        }
+                        vTaskDelay(10/portTICK_PERIOD_MS);
+                    }
+                    break;
+                
+                //Update Firmware
+                case 4:
+                    LCD_clearScreen();
+                    mqtt_app_stop();
+                    OTA_start();
+                    while(1)
+                    {
+                        switch (OTA_status)
+                        {
+                            case 1:
+                                LCD_clearScreen();
+                                LCD_setCursor(1, 0);
+                                LCD_writeStr("Looking for a new");
+                                LCD_setCursor(5, 1);
+                                LCD_writeStr("firmware...");
+                                while(OTA_status==1) vTaskDelay(10/portTICK_PERIOD_MS);
+                                break;
+                            
+                            case 2: 
+                                LCD_clearScreen();
+                                LCD_setCursor(1, 0);
+                                LCD_writeStr("New firmware    ");
+                                LCD_setCursor(10, 1);
+                                LCD_writeStr("available!");
+                                while(OTA_status==2) vTaskDelay(10/portTICK_PERIOD_MS);
+                                break;
+
+                            case 3: 
+                                LCD_clearScreen();
+                                LCD_setCursor(3, 0);
+                                LCD_writeStr("Downloading ");
+                                LCD_setCursor(3, 1);
+                                LCD_writeStr("and installing ");
+                                LCD_setCursor(3, 2);
+                                LCD_writeStr("new firmware...");   
+
+                                while(OTA_status==3) vTaskDelay(10/portTICK_PERIOD_MS);
+                                break;
+
+                            case 4:
+                                LCD_clearScreen();
+                                LCD_setCursor(1, 0);
+                                LCD_writeStr("New firmware");
+                                LCD_setCursor(6, 1);
+                                LCD_writeStr("not available!");
+                                LCD_setCursor(5, 3);
+                                LCD_writeStr("Aborting...");
+                                vTaskDelay(3000/portTICK_PERIOD_MS);
+                                goto exit;
+
+                            case 5:
+                                LCD_clearScreen();
+                                LCD_setCursor(3, 0);
+                                LCD_writeStr("Successfully");
+                                LCD_setCursor(5, 1);
+                                LCD_writeStr("updated!");
+                                LCD_setCursor(3, 3);
+                                LCD_writeStr("Restarting...");
+                                vTaskDelay(3000/portTICK_PERIOD_MS);
+                                goto exit;
+                            case 6:
+                                LCD_clearScreen();
+                                LCD_setCursor(0, 0);
+                                LCD_writeStr("Update fail!");
+                                LCD_setCursor(0, 1);
+                                LCD_writeStr("aborting...");
+                                vTaskDelay(3000/portTICK_PERIOD_MS);
+                                goto exit;
+
+                            default:
+                                break;
+                        }
+                        vTaskDelay(10/portTICK_PERIOD_MS);
+                    }
+                    exit:
+                    OTA_status =0;
+                    LCD_clearScreen();
+                    break;
+                
+                //About
+                case 6:
+                    LCD_clearScreen();
+                    LCD_setCursor(4, 0);
+                    LCD_writeStr("Dosing System"); 
+                    LCD_setCursor(1, 1);
+                    LCD_writeStr("Version: "); 
+                    
+                    LCD_writeChar((int)FIRMWARE_VERSION + 0x30);
+                    LCD_writeStr("."); 
+                    LCD_writeChar(10*(FIRMWARE_VERSION-(int)FIRMWARE_VERSION)+0x30);
+                    
+                    LCD_setCursor(1, 2);
+                    LCD_writeStr("HCMUT Final Project"); 
+                    LCD_setCursor(1, 3);
+                    LCD_writeStr("Tel: 0388161923"); 
+
+                    while(1)
+                    {
+                        if(short_press)
+                        {
+                            short_press=0;
+                            LCD_clearScreen();
+                            break;
+                        }
+                        vTaskDelay(10/portTICK_PERIOD_MS);
+                    }
+                    break;
+
+                
             }
 
             xSemaphoreGive(Sensor_Semaphore);
