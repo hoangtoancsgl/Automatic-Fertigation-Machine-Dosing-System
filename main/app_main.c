@@ -13,6 +13,8 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 
+#include "esp_ota_ops.h"
+
 #include "http_server_app.h"
 #include "cJSON.h"
 #include "output_iot.h"
@@ -218,16 +220,16 @@ void input_even_callback(int pin, uint64_t tick)
             //short press
             xEventGroupSetBitsFromISR(Button_event_group, BIT_SHORT_PRESS,  &xHigherPriorityTaskWoken);
         }
-        else if(press_ms < 2000)
-        {
-            //normal press
-            xEventGroupSetBitsFromISR(Button_event_group, BIT_NORMAL_PRESS,  &xHigherPriorityTaskWoken);
-        }
-        else if(press_ms < 4000)
-        {
-            //long press
-            xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
-        }
+        // else if(press_ms < 2000)
+        // {
+        //     //normal press
+        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_NORMAL_PRESS,  &xHigherPriorityTaskWoken);
+        // }
+        // else if(press_ms < 4000)
+        // {
+        //     //long press
+        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
+        // }
     }
 }
 
@@ -272,18 +274,18 @@ void Button_Task( void * pvParameters )
 
         if(uxBits & BIT_SHORT_PRESS)
         {
-            printf("Short Press! \n");
+            // printf("Short Press! \n");
             short_press=1;
         }
-        else if(uxBits & BIT_NORMAL_PRESS)
-        {
-            printf("Normal Press! \n");
+        // else if(uxBits & BIT_NORMAL_PRESS)
+        // {
+        //     printf("Normal Press! \n");
 
-        }
-        else if(uxBits & BIT_LONG_PRESS)
-        {
-            printf("Long Press! \n");
-        }
+        // }
+        // else if(uxBits & BIT_LONG_PRESS)
+        // {
+        //     printf("Long Press! \n");
+        // }
 
     }
 }
@@ -520,7 +522,7 @@ void Settings_display_task( void * pvParameters)
             LCD_setCursor(1, 0);
             LCD_writeStr("Update Firmware"); 
             LCD_setCursor(1, 1);
-            LCD_writeStr("Original Firmware");
+            LCD_writeStr("Factory Reset");
             LCD_setCursor(1, 2);
             LCD_writeStr("About");
             LCD_setCursor(1, 3);
@@ -539,7 +541,7 @@ void Settings_display_task( void * pvParameters)
                     {
                         LCD_clearScreen();
                         goto second_screen;
-                        
+
                     }
                     else if( (select%4==0) && (select>0) ) 
                     {
@@ -676,6 +678,8 @@ void Settings_display_task( void * pvParameters)
                             long_press=0;
                             LCD_clearScreen();
                             write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value);
+                            vTaskDelay(1000/portTICK_PERIOD_MS);
+                            short_press=0;
                             break;
                         }
 
@@ -754,9 +758,9 @@ void Settings_display_task( void * pvParameters)
                             
                             case 2: 
                                 LCD_clearScreen();
-                                LCD_setCursor(1, 0);
+                                LCD_setCursor(4, 0);
                                 LCD_writeStr("New firmware    ");
-                                LCD_setCursor(10, 1);
+                                LCD_setCursor(4, 1);
                                 LCD_writeStr("available!");
                                 while(OTA_status==2) vTaskDelay(10/portTICK_PERIOD_MS);
                                 break;
@@ -775,9 +779,9 @@ void Settings_display_task( void * pvParameters)
 
                             case 4:
                                 LCD_clearScreen();
-                                LCD_setCursor(1, 0);
+                                LCD_setCursor(3, 0);
                                 LCD_writeStr("New firmware");
-                                LCD_setCursor(6, 1);
+                                LCD_setCursor(3, 1);
                                 LCD_writeStr("not available!");
                                 LCD_setCursor(5, 3);
                                 LCD_writeStr("Aborting...");
@@ -786,9 +790,9 @@ void Settings_display_task( void * pvParameters)
 
                             case 5:
                                 LCD_clearScreen();
-                                LCD_setCursor(3, 0);
+                                LCD_setCursor(4, 0);
                                 LCD_writeStr("Successfully");
-                                LCD_setCursor(5, 1);
+                                LCD_setCursor(6, 1);
                                 LCD_writeStr("updated!");
                                 LCD_setCursor(3, 3);
                                 LCD_writeStr("Restarting...");
@@ -841,8 +845,30 @@ void Settings_display_task( void * pvParameters)
                         vTaskDelay(10/portTICK_PERIOD_MS);
                     }
                     break;
+                //Factory reset
+                case 5:
+                    LCD_clearScreen();
+                    //Search the factory partition in flash memmory
+                    esp_partition_iterator_t pi = esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL);
+                    
+                    //Partition found, set it to boot partition and reset the esp
+                    if(pi != NULL)
+                    {
+                        const esp_partition_t* factory = esp_partition_get(pi);
+                        esp_partition_iterator_release(pi);
+                        if(esp_ota_set_boot_partition(factory) == ESP_OK)
+                        {
+                            LCD_setCursor(1, 0);
+                            LCD_writeStr("Reset successfuly!"); 
+                            LCD_setCursor(1, 2);
+                            LCD_writeStr("Restarting..."); 
+                            vTaskDelay(3000/portTICK_PERIOD_MS);
+                            esp_restart();
+                        }
 
-                
+                    }
+                    break;
+  
             }
 
             xSemaphoreGive(Sensor_Semaphore);
@@ -895,7 +921,7 @@ void app_main(void)
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
 
     //Timer for button, time out = 5s
-    xTimers = xTimerCreate("Timmer_for_button_timeout", 5000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
+    xTimers = xTimerCreate("Timmer_for_button_timeout", 3000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
     //Create mutex for sensor data
     Sensor_Semaphore = xSemaphoreCreateMutex();

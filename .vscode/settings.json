@@ -22,7 +22,8 @@
     "set": "c",
     "string_view": "c",
     "array": "c",
-    "string": "c"
+    "string": "c",
+    "sys.h": "c"
   },
   "liveServer.settings.port": 5501,
   "idf.adapterTargetName": "esp32"
