@@ -484,6 +484,9 @@ void Settings_display_task( void * pvParameters)
     rotary_encoder_event_t event = { 0 };
     static float t_tds = 0, t_ph = 0, t_temp = 0;
     
+    //Time out for settings menu
+    TickType_t xStart, timeOut=6000;
+    
     //Read config value from flash
     read_config_value_from_flash();
     
@@ -497,7 +500,7 @@ void Settings_display_task( void * pvParameters)
             t_temp = temp_value;
         }
         vTaskDelay(10/portTICK_PERIOD_MS);
-
+            
         if(short_press)
         {
             short_press=0;
@@ -529,8 +532,11 @@ void Settings_display_task( void * pvParameters)
             LCD_writeStr("Exit");
             
             next:
+            xStart = xTaskGetTickCount();
             while(1)
             {
+                if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
+               
                 Display_Settings_1(select %4);
                 if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
                 {
@@ -561,6 +567,7 @@ void Settings_display_task( void * pvParameters)
                 }
 
             }
+            xStart = xTaskGetTickCount();
             switch (select)
             {
                 //Sensors Calibration
@@ -575,6 +582,7 @@ void Settings_display_task( void * pvParameters)
                     select=0;
                     while(1)
                     {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                         Display_Settings_1(select %4);
                         if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
                         {
@@ -586,13 +594,15 @@ void Settings_display_task( void * pvParameters)
                         {
                             short_press = 0;
                             select = select%4;
+                            xStart = xTaskGetTickCount();
                             switch (select)
                             {
                                 //TDS set value
                                 case 0:
-                                    Display_Settings_1(0);
+                                    Display_Settings_1(0);          
                                     while(1)
                                     {
+                                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                                         Display_sensors_settings();
                                         if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
                                         {
@@ -613,6 +623,7 @@ void Settings_display_task( void * pvParameters)
                                     Display_Settings_1(1);
                                     while(1)
                                     {
+                                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                                         Display_sensors_settings();
                                         if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
                                         {
@@ -633,6 +644,7 @@ void Settings_display_task( void * pvParameters)
                                     Display_Settings_1(2);
                                     while(1)
                                     {
+                                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                                         Display_sensors_settings();
                                         if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
                                         {
@@ -653,6 +665,7 @@ void Settings_display_task( void * pvParameters)
                                     Display_Settings_1(3);
                                     while(1)
                                     {
+                                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                                         Display_sensors_settings();
                                         if (xQueueReceive(event_queue, &event, 100/portTICK_RATE_MS) == pdTRUE)
                                         {
@@ -696,8 +709,11 @@ void Settings_display_task( void * pvParameters)
                     if( t == ESP_OK)
                         start_smart_config();
                    
-                    while(led_state==3) vTaskDelay(10/portTICK_PERIOD_MS);
-                   
+                    while(led_state==3) 
+                    {
+                        vTaskDelay(10/portTICK_PERIOD_MS);
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto fail;
+                    }
                     LCD_setCursor(0, 0);
                     if(led_state==1) 
                     {
@@ -707,15 +723,14 @@ void Settings_display_task( void * pvParameters)
                     }
                     else if(led_state==2)
                     {
+                        fail:
                         LCD_clearScreen();
                         LCD_setCursor(8, 0);
                         LCD_writeStr("Fail!");  
-                        LCD_setCursor(3, 1);
-                        LCD_writeStr("Restart device");
                         LCD_setCursor(3, 2);
-                        LCD_writeStr("and try again!");
-                        vTaskDelay(5000/portTICK_PERIOD_MS);
-
+                        LCD_writeStr("Restarting...");
+                        vTaskDelay(3000/portTICK_PERIOD_MS);
+                        esp_restart();
                     } 
                     LCD_clearScreen();
                     break;  
@@ -728,6 +743,7 @@ void Settings_display_task( void * pvParameters)
                     for(int i=0;i<12;i++) LCD_writeChar(mac_buff[i]);
                     while(1)
                     {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                         if(short_press)
                         {
                             short_press=0;
@@ -760,7 +776,7 @@ void Settings_display_task( void * pvParameters)
                                 LCD_clearScreen();
                                 LCD_setCursor(4, 0);
                                 LCD_writeStr("New firmware    ");
-                                LCD_setCursor(4, 1);
+                                LCD_setCursor(6, 1);
                                 LCD_writeStr("available!");
                                 while(OTA_status==2) vTaskDelay(10/portTICK_PERIOD_MS);
                                 break;
@@ -783,10 +799,10 @@ void Settings_display_task( void * pvParameters)
                                 LCD_writeStr("New firmware");
                                 LCD_setCursor(3, 1);
                                 LCD_writeStr("not available!");
-                                LCD_setCursor(5, 3);
+                                LCD_setCursor(4, 3);
                                 LCD_writeStr("Aborting...");
                                 vTaskDelay(3000/portTICK_PERIOD_MS);
-                                goto exit;
+                                goto out;
 
                             case 5:
                                 LCD_clearScreen();
@@ -797,7 +813,7 @@ void Settings_display_task( void * pvParameters)
                                 LCD_setCursor(3, 3);
                                 LCD_writeStr("Restarting...");
                                 vTaskDelay(3000/portTICK_PERIOD_MS);
-                                goto exit;
+                                goto out;
                             case 6:
                                 LCD_clearScreen();
                                 LCD_setCursor(0, 0);
@@ -805,14 +821,14 @@ void Settings_display_task( void * pvParameters)
                                 LCD_setCursor(0, 1);
                                 LCD_writeStr("aborting...");
                                 vTaskDelay(3000/portTICK_PERIOD_MS);
-                                goto exit;
+                                goto out;
 
                             default:
                                 break;
                         }
                         vTaskDelay(10/portTICK_PERIOD_MS);
                     }
-                    exit:
+                    out:
                     OTA_status =0;
                     LCD_clearScreen();
                     break;
@@ -836,6 +852,7 @@ void Settings_display_task( void * pvParameters)
 
                     while(1)
                     {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
                         if(short_press)
                         {
                             short_press=0;
@@ -848,6 +865,35 @@ void Settings_display_task( void * pvParameters)
                 //Factory reset
                 case 5:
                     LCD_clearScreen();
+                    LCD_setCursor(3, 0);
+                    LCD_writeStr("Are you sure?");
+                    LCD_setCursor(1, 1);
+                    LCD_writeStr("YES");
+                    LCD_setCursor(1, 2);
+                    LCD_writeStr("NO");
+
+                    select =1;
+                    while(1)
+                    {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
+
+                        Display_Settings_1(select);
+                        if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
+                        {
+                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                            if(select<1) select=1;
+                            if(select>2) select=1;
+
+                        }   
+                        if(short_press) 
+                        {
+                            short_press = 0;
+                            LCD_clearScreen();
+                            if(select==2) goto exit; else
+                            break;
+                        }
+                    }
+                    
                     //Search the factory partition in flash memmory
                     esp_partition_iterator_t pi = esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, NULL);
                     
@@ -870,7 +916,9 @@ void Settings_display_task( void * pvParameters)
                     break;
   
             }
-
+            exit:
+            select=0;
+            LCD_clearScreen();
             xSemaphoreGive(Sensor_Semaphore);
         }
        
