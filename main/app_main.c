@@ -30,22 +30,19 @@
 #include "HD44780.h"
 
 
-static const char *TAG = "DOSING SYSTEM";
-
 //EC11 encoder for settings
 #define ROT_ENC_A_GPIO 13
 #define ROT_ENC_B_GPIO 14
 
-#define ENABLE_HALF_STEPS true  // Set to true to enable tracking of rotary encoder at half step resolution
+// Set to true to enable tracking of rotary encoder at half step resolution
+#define ENABLE_HALF_STEPS true  
 
-
-//LCD 16x2
+//LCD 20x4 pins define
 #define LCD_ADDR 0x27
 #define SDA_PIN  26
 #define SCL_PIN  25
 #define LCD_COLS 20
 #define LCD_ROWS 4
-
 
 //Sensor data struct
 typedef struct Data_Send
@@ -73,6 +70,10 @@ char status_buff[100];
 */
 uint8_t led_state = 2;
 #define LED GPIO_NUM_2
+
+//Buzzer
+#define BUZZ GPIO_NUM_23
+
 
 /*OTA variable for OTA update
 1 => Looking for a new firmware
@@ -109,8 +110,24 @@ float tds_set_value=500, ph_set_value=6.5;
 //Sensors deadband value
 float tds_deadband_value=100, ph_deadband_value=0.2;
 
+//Firmware version
 extern double FIRMWARE_VERSION;
 
+
+
+/*---------------------------------Function-------------------------------------------------*/
+
+//Create bip sound
+void bip(int time)
+{
+    for(int i=0;i<time;i++)
+    {
+        output_io_set_level(BUZZ, 1);
+        vTaskDelay(100/portTICK_PERIOD_MS);
+        output_io_set_level(BUZZ, 0);
+        vTaskDelay(100/portTICK_PERIOD_MS);
+    }
+}
 
 //Genarate JSON data from sensor output
 char* GenData(Data myData)
@@ -148,6 +165,65 @@ char* GenData(Data myData)
     strcat(JSON_buff, "\"}");
 
     return JSON_buff;
+}
+
+void Display_Settings_1(int select)
+{
+    LCD_setCursor(0, select);
+    LCD_writeChar(2);
+
+    for(int j=0;j<4;j++) 
+        if(j != select) 
+        {
+            LCD_setCursor(0, j);
+            LCD_writeChar(32);
+        } 
+}
+
+void input_even_callback(int pin, uint64_t tick)
+{
+    if(pin == GPIO_NUM_32)
+    {
+        int press_ms = tick*portTICK_PERIOD_MS;
+        BaseType_t  xHigherPriorityTaskWoken = pdFALSE;
+        if(press_ms < 1000)
+        {
+            //short press
+            xEventGroupSetBitsFromISR(Button_event_group, BIT_SHORT_PRESS,  &xHigherPriorityTaskWoken);
+        }
+        // else if(press_ms < 2000)
+        // {
+        //     //normal press
+        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_NORMAL_PRESS,  &xHigherPriorityTaskWoken);
+        // }
+        // else if(press_ms < 4000)
+        // {
+        //     //long press
+        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
+        // }
+    }
+}
+
+void button_timeout_callback(int pin)
+{
+    if(pin == GPIO_NUM_32)
+    {
+        printf("Button 0 timeOut! \n");
+        long_press =1;
+    }
+}
+
+void vTimerCallback (TimerHandle_t xTimer)
+{
+    uint32_t ID;
+    configASSERT( xTimer );
+    ID = ( uint32_t ) pvTimerGetTimerID( xTimer );
+
+    if(ID == 0)
+    {
+        timeoutButton_callback(GPIO_NUM_32);
+    }
+
 }
 
 /*
@@ -208,52 +284,6 @@ void dht11_data_callback(void)
 }
 
 */
-
-void input_even_callback(int pin, uint64_t tick)
-{
-    if(pin == GPIO_NUM_32)
-    {
-        int press_ms = tick*portTICK_PERIOD_MS;
-        BaseType_t  xHigherPriorityTaskWoken = pdFALSE;
-        if(press_ms < 1000)
-        {
-            //short press
-            xEventGroupSetBitsFromISR(Button_event_group, BIT_SHORT_PRESS,  &xHigherPriorityTaskWoken);
-        }
-        // else if(press_ms < 2000)
-        // {
-        //     //normal press
-        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_NORMAL_PRESS,  &xHigherPriorityTaskWoken);
-        // }
-        // else if(press_ms < 4000)
-        // {
-        //     //long press
-        //     xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
-        // }
-    }
-}
-
-void button_timeout_callback(int pin)
-{
-    if(pin == GPIO_NUM_32)
-    {
-        printf("Button 0 timeOut! \n");
-        long_press =1;
-    }
-}
-
-void vTimerCallback (TimerHandle_t xTimer)
-{
-    uint32_t ID;
-    configASSERT( xTimer );
-    ID = ( uint32_t ) pvTimerGetTimerID( xTimer );
-
-    if(ID == 0)
-    {
-        timeoutButton_callback(GPIO_NUM_32);
-    }
-
-}
 
 //MQTT data subscribed callback
 void mqtt_event_data_callback(char *topic, char *mess)
@@ -416,19 +446,6 @@ void Display_Sensor_Data(float ver, int TDS_Value, int TDS_Set, float PH_Value, 
 
 }
 
-void Display_Settings_1(int select)
-{
-    LCD_setCursor(0, select);
-    LCD_writeChar(2);
-
-    for(int j=0;j<4;j++) 
-        if(j != select) 
-        {
-            LCD_setCursor(0, j);
-            LCD_writeChar(32);
-        } 
-}
-
 void Display_sensors_settings()
 {
     LCD_setCursor(1, 0);
@@ -469,7 +486,7 @@ void Settings_display_task( void * pvParameters)
     LCD_createCustomCharacter(degree_char, 1);
     LCD_createCustomCharacter(arrow_char, 2);
 
-    // Initialise the rotary encoder device with the GPIOs for A and B signals
+    // Init the rotary encoder device with the GPIOs for A and B signals
     rotary_encoder_info_t info = { 0 };
     ESP_ERROR_CHECK(rotary_encoder_init(&info, ROT_ENC_A_GPIO, ROT_ENC_B_GPIO));
     ESP_ERROR_CHECK(rotary_encoder_enable_half_steps(&info, ENABLE_HALF_STEPS));
@@ -484,11 +501,13 @@ void Settings_display_task( void * pvParameters)
     rotary_encoder_event_t event = { 0 };
     static float t_tds = 0, t_ph = 0, t_temp = 0;
     
-    //Time out for settings menu
+    //Timeout for settings menu
     TickType_t xStart, timeOut=6000;
     
-    //Read config value from flash
+    //Read config values from flash
     read_config_value_from_flash();
+    
+    bip(2);
     
     while(1)
     {
@@ -503,6 +522,7 @@ void Settings_display_task( void * pvParameters)
             
         if(short_press)
         {
+            bip(1);
             short_press=0;
             LCD_clearScreen();
             int select = 0;
@@ -560,6 +580,7 @@ void Settings_display_task( void * pvParameters)
                 }   
                 if(short_press) 
                 {
+                    bip(1);
                     short_press = 0;
                     select = select%8;
                     LCD_clearScreen();
@@ -592,6 +613,7 @@ void Settings_display_task( void * pvParameters)
 
                         if(short_press) 
                         {
+                            bip(1);
                             short_press = 0;
                             select = select%4;
                             xStart = xTaskGetTickCount();
@@ -611,6 +633,7 @@ void Settings_display_task( void * pvParameters)
                                         }
                                         if(short_press)
                                         {
+                                            bip(1);
                                             short_press=0;
                                             break;
                                         }
@@ -633,6 +656,7 @@ void Settings_display_task( void * pvParameters)
                                         }
                                         if(short_press)
                                         {
+                                            bip(1);
                                             short_press=0;
                                             break;
                                         }
@@ -654,6 +678,7 @@ void Settings_display_task( void * pvParameters)
                                         }
                                         if(short_press)
                                         {
+                                            bip(1);
                                             short_press=0;
                                             break;
                                         }
@@ -675,6 +700,7 @@ void Settings_display_task( void * pvParameters)
                                         }
                                         if(short_press)
                                         {
+                                            bip(1);
                                             short_press=0;
                                             break;
                                         }
@@ -689,11 +715,11 @@ void Settings_display_task( void * pvParameters)
                         if(long_press)
                         {
                             long_press=0;
-                            LCD_clearScreen();
                             write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value);
                             vTaskDelay(1000/portTICK_PERIOD_MS);
                             short_press=0;
-                            break;
+                            LCD_clearScreen();
+                            goto exit;
                         }
 
                     }
@@ -727,7 +753,7 @@ void Settings_display_task( void * pvParameters)
                         LCD_clearScreen();
                         LCD_setCursor(8, 0);
                         LCD_writeStr("Fail!");  
-                        LCD_setCursor(3, 2);
+                        LCD_setCursor(5, 2);
                         LCD_writeStr("Restarting...");
                         vTaskDelay(3000/portTICK_PERIOD_MS);
                         esp_restart();
@@ -872,7 +898,7 @@ void Settings_display_task( void * pvParameters)
                     LCD_setCursor(1, 2);
                     LCD_writeStr("NO");
 
-                    select =1;
+                    select =2;
                     while(1)
                     {
                         if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
@@ -881,12 +907,12 @@ void Settings_display_task( void * pvParameters)
                         if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
                         {
                             event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
-                            if(select<1) select=1;
-                            if(select>2) select=1;
-
+                            if(select<1 || select>2) select=1;
+                        
                         }   
                         if(short_press) 
                         {
+                            bip(1);
                             short_press = 0;
                             LCD_clearScreen();
                             if(select==2) goto exit; else
@@ -919,6 +945,7 @@ void Settings_display_task( void * pvParameters)
             exit:
             select=0;
             LCD_clearScreen();
+            bip(2);
             xSemaphoreGive(Sensor_Semaphore);
         }
        
@@ -927,7 +954,7 @@ void Settings_display_task( void * pvParameters)
 
 void app_main(void)
 {
-    //Initialize NVS
+    //Init NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) 
     {
@@ -955,14 +982,18 @@ void app_main(void)
         */
 
     //init button and LED indicator for smart config
+    
     Button_event_group = xEventGroupCreate();
     input_io_create(GPIO_NUM_32, ANY_EDLE);
    
     input_set_callback(input_even_callback);
     input_set_timeoutButton_callback(button_timeout_callback);
 
-    output_io_create(GPIO_NUM_2);
+    output_io_create(LED);
+    
 
+    //Init buzzer
+    output_io_create(BUZZ);
 
     //Tasks for smart config
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);

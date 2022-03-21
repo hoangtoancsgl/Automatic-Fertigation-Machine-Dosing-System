@@ -300,8 +300,8 @@ void initialise_wifi(void)
     
     //Read wifi information form flash
     read_wifi_infor_from_flash();
-    printf("Data read SSID: %s\n", ssid);
-    printf("Data read PASS: %s\n", pass);
+    // printf("Data read SSID: %s\n", ssid);
+    // printf("Data read PASS: %s\n", pass);
 
     memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     memcpy(wifi_config.sta.password, pass, sizeof(wifi_config.sta.password));
