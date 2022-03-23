@@ -86,5 +86,5 @@ float adc_read_ph_sensor()
     if(esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)==142) 
         return 0;
     else 
-        return esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)/1000.0;
+        return esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars);
 }

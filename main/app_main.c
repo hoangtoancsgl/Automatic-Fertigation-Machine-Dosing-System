@@ -74,6 +74,11 @@ uint8_t led_state = 2;
 //Buzzer
 #define BUZZ GPIO_NUM_23
 
+//4 peristaltic pump
+#define pump1 GPIO_NUM_18
+#define pump2 GPIO_NUM_19
+#define pump3 GPIO_NUM_21
+#define pump4 GPIO_NUM_22
 
 /*OTA variable for OTA update
 1 => Looking for a new firmware
@@ -103,6 +108,10 @@ SemaphoreHandle_t Sensor_Semaphore = NULL;
 
 //Sensors value
 static float temp_value=0 , tds_value=0, ph_value=0;
+
+//Sensor calibration value
+//PH sensor calibration values
+static int Voltage_686, Votage_401, Votage_918;
 
 //Sensors set value
 float tds_set_value=500, ph_set_value=6.5;
@@ -307,6 +316,8 @@ void Button_Task( void * pvParameters )
             // printf("Short Press! \n");
             short_press=1;
         }
+
+
         // else if(uxBits & BIT_NORMAL_PRESS)
         // {
         //     printf("Normal Press! \n");
@@ -331,9 +342,11 @@ void Read_sensor_task( void * pvParameters)
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
+        
         tds_voltage = adc_read_tds_sensor();
         // printf("TDS voltage: %0.3f\n", tds_voltage);
         ph_voltage = adc_read_ph_sensor();
+        ph_value = ph_voltage;
         temp_value = ds18b20_get_temp();
         // printf("Temperature: %0.1f\n\n", temp_value);
 
@@ -502,7 +515,7 @@ void Settings_display_task( void * pvParameters)
     static float t_tds = 0, t_ph = 0, t_temp = 0;
     
     //Timeout for settings menu
-    TickType_t xStart, timeOut=6000;
+    TickType_t xStart, xStart_Vol, timeOut=6000;
     
     //Read config values from flash
     read_config_value_from_flash();
@@ -519,6 +532,17 @@ void Settings_display_task( void * pvParameters)
             t_temp = temp_value;
         }
         vTaskDelay(10/portTICK_PERIOD_MS);
+
+        // output_io_set_level(pump4, 1);
+        // output_io_set_level(pump3, 1);
+        // output_io_set_level(pump2, 1);
+        // output_io_set_level(pump1, 1);
+        // vTaskDelay(100/portTICK_PERIOD_MS);
+        // output_io_set_level(pump4, 0);
+        // output_io_set_level(pump3, 0);
+        // output_io_set_level(pump2, 0);
+        // output_io_set_level(pump1, 0);
+        // vTaskDelay(1000/portTICK_PERIOD_MS);
             
         if(short_press)
         {
@@ -533,7 +557,7 @@ void Settings_display_task( void * pvParameters)
             LCD_setCursor(1, 0);
             LCD_writeStr("Sensors Calibration"); 
             LCD_setCursor(1, 1);
-            LCD_writeStr("Sensors Settings  ");
+            LCD_writeStr("Value Settings  ");
             LCD_setCursor(1, 2);
             LCD_writeStr("Config Wifi");
             LCD_setCursor(1, 3);
@@ -593,7 +617,75 @@ void Settings_display_task( void * pvParameters)
             {
                 //Sensors Calibration
                 case 0:
-                    // read_config_value_from_flash();
+                    LCD_setCursor(1, 0);
+                    LCD_writeStr("TDS Sensor");
+                    LCD_setCursor(1, 1);
+                    LCD_writeStr("PH Sensor");
+                    select =0;
+                    while(1)
+                    {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
+
+                        Display_Settings_1(select);
+                        if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
+                        {
+                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                            if(select<0 || select>1) select=0;
+                        
+                        }   
+                        if(short_press) 
+                        {
+                            bip(1);
+                            short_press = 0;
+                            LCD_clearScreen();
+                            break;
+                        }
+                        
+                    }
+
+                    if(select)
+                    {
+                        xStart = xTaskGetTickCount();
+                        xStart_Vol = xTaskGetTickCount();
+                        LCD_setCursor(3, 0);
+                        LCD_writeStr("First Solution");
+                        LCD_setCursor(1, 1);
+                        LCD_writeStr("Voltage:");
+                        LCD_setCursor(1, 2);
+                        LCD_writeStr("Auto Detect:");
+                        while(1)
+                        {
+                            if((xTaskGetTickCount() - xStart) > timeOut*5) goto exit;
+
+                            if((xTaskGetTickCount() - xStart_Vol) > 50)
+                            {
+                                xStart_Vol = xTaskGetTickCount();
+                                
+                                int ph_vol = (int)adc_read_ph_sensor();
+                                LCD_setCursor(9, 1);
+                                Lcd_write_int(ph_vol);
+                                LCD_writeStr(" mV    ");
+                                
+                                LCD_setCursor(13, 2);
+                                if(ph_vol>1300  && ph_vol<1600) LCD_writeStr("6.86   ");
+                                else if(ph_vol>2000  && ph_vol<2100) LCD_writeStr("4.01   ");
+                                else if(ph_vol>1000  && ph_vol<1200) LCD_writeStr("9.18   ");
+                                else LCD_writeStr("Unknown");
+  
+                            }
+                                
+                            if(short_press) 
+                            {
+                                bip(1);
+                                short_press = 0;
+                                LCD_clearScreen();
+                                break;
+                            }   
+                        }
+                    }
+
+
+                    
                     break;
                 
                 //Sensors Settings
@@ -845,7 +937,7 @@ void Settings_display_task( void * pvParameters)
                                 LCD_setCursor(0, 0);
                                 LCD_writeStr("Update fail!");
                                 LCD_setCursor(0, 1);
-                                LCD_writeStr("aborting...");
+                                LCD_writeStr("Aborting...");
                                 vTaskDelay(3000/portTICK_PERIOD_MS);
                                 goto out;
 
@@ -994,6 +1086,12 @@ void app_main(void)
 
     //Init buzzer
     output_io_create(BUZZ);
+
+    //Init 4 peristaltic pump
+    output_io_create(pump1);
+    output_io_create(pump2);
+    output_io_create(pump3);
+    output_io_create(pump4);
 
     //Tasks for smart config
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
