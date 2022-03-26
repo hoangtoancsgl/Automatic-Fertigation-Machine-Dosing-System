@@ -41,10 +41,11 @@ static bool smart_config_process = false;
 static const char *TAG = "SMART_CONFIG";
 
 extern float tds_set_value, tds_deadband_value, ph_deadband_value, ph_set_value;
+extern int Voltage_686, Voltage_401;
 
 wifi_config_t wifi_config;
 
-void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, float ph_set_value, float ph_deadband_value)
+void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, float ph_set_value, float ph_deadband_value, int Voltage_686, int Voltage_401)
 {
     ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to write config value... ");
     nvs_handle_t my_handle;
@@ -56,6 +57,12 @@ void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, floa
     else 
     {
         err = nvs_set_i16(my_handle, "tds_set_value", (int)tds_set_value);
+        // printf((err != ESP_OK) ? "tds set value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "Voltage_686", Voltage_686);
+        // printf((err != ESP_OK) ? "tds set value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "Voltage_401", Voltage_401);
         // printf((err != ESP_OK) ? "tds set value Failed!\n" : "Done\n");
 
         err = nvs_set_i16(my_handle, "tds_db_value", (int)tds_deadband_value);
@@ -91,6 +98,14 @@ void read_config_value_from_flash()
         err = nvs_get_i16(my_handle, "tds_set_value", &t);
         // printf((err != ESP_OK) ? "tds set value value Failed!\n" : "Done\n");
         tds_set_value = t;
+
+        err = nvs_get_i16(my_handle, "Voltage_686", &t);
+        // printf((err != ESP_OK) ? "tds set value value Failed!\n" : "Done\n");
+        Voltage_686 = t;
+
+        err = nvs_get_i16(my_handle, "Voltage_401", &t);
+        // printf((err != ESP_OK) ? "tds set value value Failed!\n" : "Done\n");
+        Voltage_401 = t;
 
         err = nvs_get_i16(my_handle, "tds_db_value", &t);
         // printf((err != ESP_OK) ? "tds deadband value value Failed!\n" : "Done\n");
@@ -315,6 +330,7 @@ void initialise_wifi(void)
    
     uint8_t mac_add[6];    
     esp_wifi_get_mac(WIFI_IF_STA, mac_add);
+    mac_add[1] = "7";
     
     strcat(status_buff, "hoangtoancsgl/");
     strcat(data_buff, "hoangtoancsgl/");

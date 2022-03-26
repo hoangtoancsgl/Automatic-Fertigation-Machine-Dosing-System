@@ -56,6 +56,7 @@ typedef struct Data_Send
 //buffer for sensors data
 char JSON_buff[100];
 
+
 //buffer for device ID 
 char mac_buff[12];
 char data_buff[100];
@@ -111,7 +112,8 @@ static float temp_value=0 , tds_value=0, ph_value=0;
 
 //Sensor calibration value
 //PH sensor calibration values
-static int Voltage_686, Votage_401, Votage_918;
+int Voltage_686, Voltage_401;
+int ph_vol;
 
 //Sensors set value
 float tds_set_value=500, ph_set_value=6.5;
@@ -129,6 +131,13 @@ extern double FIRMWARE_VERSION;
 //Create bip sound
 void bip(int time)
 {
+    if(time == 10)
+    {
+        output_io_set_level(BUZZ, 1);
+        vTaskDelay(500/portTICK_PERIOD_MS);
+        output_io_set_level(BUZZ, 0);    
+    }
+    else
     for(int i=0;i<time;i++)
     {
         output_io_set_level(BUZZ, 1);
@@ -153,7 +162,7 @@ char* GenData(Data myData)
         
         JSON_buff[i]=0;
     }
-    sprintf(str_PH, "%0.2f", myData.PH);
+    sprintf(str_PH, "%0.1f", myData.PH);
     sprintf(str_TDS, "%d", myData.TDS);
     sprintf(str_temp, "%0.1f", myData.temperature);
    
@@ -345,8 +354,13 @@ void Read_sensor_task( void * pvParameters)
         
         tds_voltage = adc_read_tds_sensor();
         // printf("TDS voltage: %0.3f\n", tds_voltage);
+        
         ph_voltage = adc_read_ph_sensor();
-        ph_value = ph_voltage;
+        float slope = (6.86-4.01)/((Voltage_686-1500.0)/3.0 - (Voltage_401-1500.0)/3.0);  // two point: (_neutralVoltage,7.0),(_acidVoltage,4.0)
+        float intercept =  6.86 - slope*(Voltage_686-1500.0)/3.0;
+    
+        ph_value = slope*(ph_voltage-1500.0)/3.0+intercept;  //y = k*x + b
+    
         temp_value = ds18b20_get_temp();
         // printf("Temperature: %0.1f\n\n", temp_value);
 
@@ -645,45 +659,112 @@ void Settings_display_task( void * pvParameters)
 
                     if(select)
                     {
+                        int8_t count;
+                        int8_t first_solution = 0;
+
+                        int8_t solution_type=0;
+                        
+                        first_ph:
+                        count=1;
+                        
+                        second_ph:
                         xStart = xTaskGetTickCount();
                         xStart_Vol = xTaskGetTickCount();
-                        LCD_setCursor(3, 0);
-                        LCD_writeStr("First Solution");
+                        if(count == 1) 
+                        {
+                            LCD_setCursor(3, 0);
+                            LCD_writeStr("First Solution");
+                        }
+                        else if(count == 2) 
+                        {
+                            LCD_setCursor(2, 0);
+                            LCD_writeStr("Second Solution");
+                        }
                         LCD_setCursor(1, 1);
                         LCD_writeStr("Voltage:");
                         LCD_setCursor(1, 2);
                         LCD_writeStr("Auto Detect:");
+                        
                         while(1)
                         {
-                            if((xTaskGetTickCount() - xStart) > timeOut*5) goto exit;
+                            
+                            if((xTaskGetTickCount() - xStart) > timeOut*10) goto exit;
 
                             if((xTaskGetTickCount() - xStart_Vol) > 50)
                             {
                                 xStart_Vol = xTaskGetTickCount();
                                 
-                                int ph_vol = (int)adc_read_ph_sensor();
+                                ph_vol = (int)adc_read_ph_sensor();
                                 LCD_setCursor(9, 1);
                                 Lcd_write_int(ph_vol);
                                 LCD_writeStr(" mV    ");
                                 
                                 LCD_setCursor(13, 2);
-                                if(ph_vol>1300  && ph_vol<1600) LCD_writeStr("6.86   ");
-                                else if(ph_vol>2000  && ph_vol<2100) LCD_writeStr("4.01   ");
-                                else if(ph_vol>1000  && ph_vol<1200) LCD_writeStr("9.18   ");
-                                else LCD_writeStr("Unknown");
+                                if(ph_vol>1500  && ph_vol<1800) 
+                                {
+                                    LCD_writeStr("6.86   ");
+                                    solution_type = 1;
+                                }
+                                else if(ph_vol>2000  && ph_vol<2300) 
+                                {
+                                    LCD_writeStr("4.01   ");
+                                    solution_type = 2;
+                                }
+                                else 
+                                {
+                                    LCD_writeStr("Unknown");
+                                    solution_type = 0;
+                                }
   
                             }
-                                
-                            if(short_press) 
+                            if(long_press) 
                             {
-                                bip(1);
+                               
+                               long_press=0;
+                                goto exit; 
+                            }  
+                            
+                            if(short_press) 
+                            {            
                                 short_press = 0;
+                                vTaskDelay(100/portTICK_PERIOD_MS);
+                                short_press = 0;
+
+
                                 LCD_clearScreen();
-                                break;
+                                if(count == 1) 
+                                {
+                                    
+                                    if(solution_type == 0) 
+                                    {
+                                        bip(3);
+                                        goto first_ph;
+                                    }
+                                    else if(solution_type == 1) Voltage_686 = ph_vol;
+                                    else if(solution_type == 2) Voltage_401 = ph_vol;
+                                    bip(1);
+                                    first_solution = solution_type;
+
+                                    count=2;
+                                    goto second_ph;
+                                }
+                                else if(count == 2)
+                                {
+                                    if(solution_type == 0 || first_solution == solution_type) 
+                                    {
+                                        bip(3);
+                                        goto second_ph;
+                                    }
+                                    else if(solution_type == 1) Voltage_686 = ph_vol;
+                                    else if(solution_type == 2) Voltage_401 = ph_vol;
+                                   
+                                    write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value, Voltage_686, Voltage_401);
+
+                                    break;
+                                }
                             }   
                         }
                     }
-
 
                     
                     break;
@@ -807,7 +888,7 @@ void Settings_display_task( void * pvParameters)
                         if(long_press)
                         {
                             long_press=0;
-                            write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value);
+                            write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value, Voltage_686, Voltage_401);
                             vTaskDelay(1000/portTICK_PERIOD_MS);
                             short_press=0;
                             LCD_clearScreen();
@@ -1004,11 +1085,14 @@ void Settings_display_task( void * pvParameters)
                         }   
                         if(short_press) 
                         {
-                            bip(1);
+                            
                             short_press = 0;
                             LCD_clearScreen();
                             if(select==2) goto exit; else
-                            break;
+                            {
+                                bip(1);
+                                break;
+                            }
                         }
                     }
                     
@@ -1037,7 +1121,7 @@ void Settings_display_task( void * pvParameters)
             exit:
             select=0;
             LCD_clearScreen();
-            bip(2);
+            bip(10);
             xSemaphoreGive(Sensor_Semaphore);
         }
        

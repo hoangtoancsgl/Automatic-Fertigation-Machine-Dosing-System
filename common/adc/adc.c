@@ -8,8 +8,8 @@
 #include "esp_adc_cal.h"
 #include "adc.h"
 
-#define DEFAULT_VREF    1100        
-#define NO_OF_SAMPLES   64          
+#define DEFAULT_VREF    1000        
+#define NO_OF_SAMPLES   70     
 
 static esp_adc_cal_characteristics_t *adc_chars;
 
@@ -21,6 +21,7 @@ static const adc_bits_width_t width = ADC_WIDTH_BIT_12;
 static const adc_atten_t atten = ADC_ATTEN_DB_11; //2600mV
 
 static int adc_buff[NO_OF_SAMPLES];
+static int adc_buff1[NO_OF_SAMPLES];
 
 static int getMedianNum(int bArray[], int iFilterLen) 
 {
@@ -61,13 +62,19 @@ float adc_read_tds_sensor()
 {
     uint32_t TDS_sensor_value = 0;
     //Multisampling
-    for (int i = 0; i < NO_OF_SAMPLES; i++) 
+    for (int j = 0; j < NO_OF_SAMPLES; j++) 
     {
-        adc_buff[i]= adc1_get_raw(TDS_sensor);
+        for (int i = 0; i < NO_OF_SAMPLES; i++) 
+        {
+            adc_buff[i]= adc1_get_raw(TDS_sensor);
+        }
+        vTaskDelay(1);
+        adc_buff1[j] = getMedianNum(adc_buff, NO_OF_SAMPLES);
     }
-    TDS_sensor_value = getMedianNum(adc_buff, 64);
+        
+    TDS_sensor_value = getMedianNum(adc_buff1, NO_OF_SAMPLES);
     //Convert TDS_sensor_value to voltage in V
-    if(esp_adc_cal_raw_to_voltage(TDS_sensor_value, adc_chars)==142) 
+    if(esp_adc_cal_raw_to_voltage(TDS_sensor_value, adc_chars)<=142) 
         return 0;
     else 
         return esp_adc_cal_raw_to_voltage(TDS_sensor_value, adc_chars)/1000.0;
@@ -77,14 +84,20 @@ float adc_read_ph_sensor()
 {
     uint32_t PH_sensor_value = 0;
     //Multisampling
-    for (int i = 0; i < NO_OF_SAMPLES; i++) 
+    for (int j = 0; j < NO_OF_SAMPLES; j++) 
     {
-        adc_buff[i]= adc1_get_raw(PH_sensor);
+        for (int i = 0; i < NO_OF_SAMPLES; i++) 
+        {
+            adc_buff[i]= adc1_get_raw(PH_sensor);
+        }
+        vTaskDelay(1);
+        adc_buff1[j] = getMedianNum(adc_buff, NO_OF_SAMPLES);
     }
-    PH_sensor_value = getMedianNum(adc_buff, 64);
+        
+    PH_sensor_value = getMedianNum(adc_buff1, NO_OF_SAMPLES);
     //Convert PH_sensor_value to voltage in V
-    if(esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)==142) 
+    if(esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)<=142) 
         return 0;
     else 
-        return esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars);
+        return esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)-15;
 }
