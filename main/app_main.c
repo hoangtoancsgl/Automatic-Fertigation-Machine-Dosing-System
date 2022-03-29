@@ -61,6 +61,7 @@ char JSON_buff[100];
 char mac_buff[12];
 char data_buff[100];
 char status_buff[100];
+char config_buff[100];
 
 
 /*LED state for wifi connection:
@@ -106,6 +107,8 @@ extern timeoutButton_t timeoutButton_callback;
 
 //Mutex for handle variable data sensors
 SemaphoreHandle_t Sensor_Semaphore = NULL;
+
+SemaphoreHandle_t Screen_Semaphore = NULL;
 
 //Sensors value
 static float temp_value=0 , tds_value=0, ph_value=0;
@@ -303,13 +306,66 @@ void dht11_data_callback(void)
 
 */
 
+uint8_t Json_parse(char *data)
+{
+    cJSON *str_json, str_ph_value, json_ph_deadband, json_tds_value, json_tds_deadband;
+    
+    str_json = cJSON_Parse(data);
+    if(!str_json)
+    {
+        // printf("Not a json \n");
+        return 0;
+    }     
+    else
+    {
+        // printf("Json ok \n");
+        if(cJSON_GetObjectItem(str_json, "PH_val"))
+        {
+            ph_set_value = atof(cJSON_GetObjectItem(str_json, "PH_val")->valuestring);
+            // printf("Gia tri PH_val moi: %0.2f\n", ph_set_value);
+        }
+        if(cJSON_GetObjectItem(str_json, "PH_dead"))
+        {
+            ph_deadband_value = atof(cJSON_GetObjectItem(str_json, "PH_dead")->valuestring);
+            // printf("Gia tri PH_dead set moi: %0.2f\n", ph_deadband_value);
+        }
+        if(cJSON_GetObjectItem(str_json, "TDS_val"))
+        {
+            tds_set_value = atof(cJSON_GetObjectItem(str_json, "TDS_val")->valuestring);
+            // printf("Gia tri TDS_val set moi: %0.2f\n", tds_set_value);
+        }
+        if(cJSON_GetObjectItem(str_json, "TDS_dead"))
+        {
+            tds_deadband_value = atof(cJSON_GetObjectItem(str_json, "TDS_dead")->valuestring);
+            // printf("Gia tri TDS_dead set moi: %0.2f\n", tds_deadband_value);
+        }
+    }
+        
+    return 1;
+}
+
 //MQTT data subscribed callback
 void mqtt_event_data_callback(char *topic, char *mess)
 {
-    if(strstr(topic, "123"))
+    
+    if(strstr(topic, "config"))
     {
-        printf("Button1 is pressed!\n"); 
-        output_io_toggle(2);
+        if(Json_parse(mess)) 
+        {
+            write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value, Voltage_686, Voltage_401);
+        }
+        
+        xSemaphoreTake(Screen_Semaphore, portMAX_DELAY);
+ 
+        LCD_clearScreen();
+        LCD_setCursor(1, 0);
+        LCD_writeStr("Write successfully!");
+        bip(3);
+        vTaskDelay(3000/portTICK_PERIOD_MS);
+        LCD_clearScreen();
+        xSemaphoreGive(Screen_Semaphore);
+
+
     } 
 }
 
@@ -352,24 +408,25 @@ void Read_sensor_task( void * pvParameters)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
         
-        tds_voltage = adc_read_tds_sensor();
-        // printf("TDS voltage: %0.3f\n", tds_voltage);
-        
+        //Read PH value
         ph_voltage = adc_read_ph_sensor();
-        float slope = (6.86-4.01)/((Voltage_686-1500.0)/3.0 - (Voltage_401-1500.0)/3.0);  // two point: (_neutralVoltage,7.0),(_acidVoltage,4.0)
+        float slope = (6.86-4.01)/((Voltage_686-1500.0)/3.0 - (Voltage_401-1500.0)/3.0);  // two point: (_neutralVoltage,6.86),(_acidVoltage,4.01)
         float intercept =  6.86 - slope*(Voltage_686-1500.0)/3.0;
     
         ph_value = slope*(ph_voltage-1500.0)/3.0+intercept;  //y = k*x + b
     
-        temp_value = ds18b20_get_temp();
-        // printf("Temperature: %0.1f\n\n", temp_value);
 
+        //Read temperature value
+        temp_value = ds18b20_get_temp();
+
+        //Read TDS value
+        tds_voltage = adc_read_tds_sensor()/1000;
         float compensationCoefficient=1.0+0.02*(temp_value-25.0);    //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
         float compensationVolatge=tds_voltage/compensationCoefficient;  //temperature compensation
 
-        tds_value = (133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.5; //convert voltage value to tds value
-
+        tds_value = (133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*0.34; //convert voltage value to tds value
         xSemaphoreGive(Sensor_Semaphore);
+       
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 }
@@ -540,10 +597,12 @@ void Settings_display_task( void * pvParameters)
     {
         if(tds_value != t_tds || ph_value != t_ph || temp_value != t_temp)
         {
+            xSemaphoreTake(Screen_Semaphore, portMAX_DELAY);
             Display_Sensor_Data(FIRMWARE_VERSION, tds_value, tds_set_value, ph_value, ph_set_value, temp_value); 
             t_tds = tds_value; 
             t_ph = ph_value; 
             t_temp = temp_value;
+            xSemaphoreGive(Screen_Semaphore);
         }
         vTaskDelay(10/portTICK_PERIOD_MS);
 
@@ -618,7 +677,7 @@ void Settings_display_task( void * pvParameters)
                 }   
                 if(short_press) 
                 {
-                    bip(1);
+                    if(select%8 !=7) bip(1);
                     short_press = 0;
                     select = select%8;
                     LCD_clearScreen();
@@ -1184,9 +1243,9 @@ void app_main(void)
     //Timer for button, time out = 5s
     xTimers = xTimerCreate("Timmer_for_button_timeout", 3000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
-    //Create mutex for sensor data
+    //Create mutex for sensor data value and screen displayment
     Sensor_Semaphore = xSemaphoreCreateMutex();
-
+    Screen_Semaphore = xSemaphoreCreateMutex();
     //init sensors 
     xTaskCreate(Read_sensor_task, "Read_sensor_task", 2048, NULL, 3, NULL);
 

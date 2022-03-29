@@ -23,6 +23,7 @@ static EventGroupHandle_t s_wifi_event_group;
 extern char data_buff[100];
 extern char status_buff[100];
 extern char mac_buff[12];
+extern char config_buff[100];
 
 
 //wifi infor default 
@@ -330,10 +331,10 @@ void initialise_wifi(void)
    
     uint8_t mac_add[6];    
     esp_wifi_get_mac(WIFI_IF_STA, mac_add);
-    mac_add[1] = "7";
     
     strcat(status_buff, "hoangtoancsgl/");
     strcat(data_buff, "hoangtoancsgl/");
+    strcat(config_buff, "hoangtoancsgl/");
     for(int i=0;i<6;i++)
     {
         char temp[3];
@@ -342,19 +343,20 @@ void initialise_wifi(void)
             sprintf(temp, "%d", 0);
             strcat(status_buff, temp);
             strcat(data_buff, temp);
+            strcat(config_buff, temp);
             strcat(mac_buff, temp);
         }
         
         sprintf(temp, "%x", mac_add[i]);
         strcat(status_buff, temp);
         strcat(data_buff, temp);
+        strcat(config_buff, temp);
         strcat(mac_buff, temp);
     }
     strcat(status_buff, "/status");
     strcat(data_buff, "/data");
-
-    // printf("Status: %.*s\r\n", 33, status_buff);
-    // printf("Data: %.*s\r\n", 33, data_buff);
+    strcat(config_buff, "/config");
+    //  printf("Config: %.*s\r\n", 50, config_buff);
 
 }
 

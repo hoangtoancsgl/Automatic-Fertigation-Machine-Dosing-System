@@ -35,6 +35,7 @@ extern uint8_t led_state;
 
 extern char data_buff[100];
 extern char status_buff[100];
+extern char config_buff[100];
 
 esp_mqtt_client_handle_t client;
 
@@ -62,7 +63,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             led_state = 4;
             esp_mqtt_client_publish(client, status_buff, "online", 0, 1, 0);
             esp_mqtt_client_subscribe(client, data_buff, 0);
-            esp_mqtt_client_subscribe(client, "hoangtoancsgl/083af2529f4c/config", 0);
+            esp_mqtt_client_subscribe(client, config_buff, 0);
 
             // ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
             break;
