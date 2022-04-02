@@ -28,19 +28,20 @@
 #include "ds18b20.h"
 #include "rotary_encoder.h"
 #include "HD44780.h"
+#include "i2cdev.h"
+#include "ds3231.h"
 
+static const char *TAG = "MAIN";
 
 //EC11 encoder for settings
-#define ROT_ENC_A_GPIO 13
-#define ROT_ENC_B_GPIO 14
+#define ROT_ENC_A_GPIO 27
+#define ROT_ENC_B_GPIO 33
 
 // Set to true to enable tracking of rotary encoder at half step resolution
 #define ENABLE_HALF_STEPS true  
 
 //LCD 20x4 pins define
 #define LCD_ADDR 0x27
-#define SDA_PIN  26
-#define SCL_PIN  25
 #define LCD_COLS 20
 #define LCD_ROWS 4
 
@@ -71,7 +72,7 @@ char config_buff[100];
     4 => MQTT CONNECTED 
 */
 uint8_t led_state = 2;
-#define LED GPIO_NUM_2
+#define LED GPIO_NUM_12
 
 //Buzzer
 #define BUZZ GPIO_NUM_23
@@ -229,7 +230,7 @@ void button_timeout_callback(int pin)
 {
     if(pin == GPIO_NUM_32)
     {
-        printf("Button 0 timeOut! \n");
+        // printf("Button 0 timeOut! \n");      
         long_press =1;
     }
 }
@@ -308,7 +309,7 @@ void dht11_data_callback(void)
 
 uint8_t Json_parse(char *data)
 {
-    cJSON *str_json, str_ph_value, json_ph_deadband, json_tds_value, json_tds_deadband;
+    cJSON *str_json;
     
     str_json = cJSON_Parse(data);
     if(!str_json)
@@ -480,13 +481,23 @@ void Led_task( void * pvParameters )
 
 void Mqtt_communication_task( void * pvParameters)
 {
+    int year, month, day, hour, minute, second;
+    float temp;
     mqtt_app_start();
+    
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
         Data myData = {ph_value, tds_value, temp_value};
 
         mqtt_publish_data(data_buff, GenData(myData));
+        
+        if(getClock(&year, &month, &day, &hour, &minute, &second, &temp) == ESP_OK) 
+        {
+            ESP_LOGI(TAG, "%04d-%02d-%02d %02d:%02d:%02d, %.2f deg Cel", year, month, day, hour, minute, second, temp);                             
+        }
+        else ESP_LOGE(TAG, "ERROR!");
+        
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelay(5000/portTICK_RATE_MS);
     }
@@ -610,7 +621,7 @@ void Settings_display_task( void * pvParameters)
         // output_io_set_level(pump3, 1);
         // output_io_set_level(pump2, 1);
         // output_io_set_level(pump1, 1);
-        // vTaskDelay(100/portTICK_PERIOD_MS);
+        // vTaskDelay(500/portTICK_PERIOD_MS);
         // output_io_set_level(pump4, 0);
         // output_io_set_level(pump3, 0);
         // output_io_set_level(pump2, 0);
@@ -624,6 +635,7 @@ void Settings_display_task( void * pvParameters)
             LCD_clearScreen();
             int select = 0;
             xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
+            
             
             first_screen:
             
@@ -682,6 +694,14 @@ void Settings_display_task( void * pvParameters)
                     select = select%8;
                     LCD_clearScreen();
                     break;
+                }
+                if(long_press)
+                {
+                    vTaskDelay(100/portTICK_PERIOD_MS);
+                    long_press = 0;
+                    short_press=0;
+                    LCD_clearScreen();
+                    goto exit;
                 }
 
             }
@@ -828,7 +848,7 @@ void Settings_display_task( void * pvParameters)
                     
                     break;
                 
-                //Sensors Settings
+                //Value Settings
                 case 1:  
                     a:   
                     Display_sensors_settings();
@@ -946,7 +966,9 @@ void Settings_display_task( void * pvParameters)
                         }
                         if(long_press)
                         {
+                            vTaskDelay(100/portTICK_PERIOD_MS);
                             long_press=0;
+                            short_press=0;
                             write_config_value_to_flash(tds_set_value, tds_deadband_value, ph_set_value, ph_deadband_value, Voltage_686, Voltage_401);
                             vTaskDelay(1000/portTICK_PERIOD_MS);
                             short_press=0;
@@ -971,6 +993,12 @@ void Settings_display_task( void * pvParameters)
                     {
                         vTaskDelay(10/portTICK_PERIOD_MS);
                         if((xTaskGetTickCount() - xStart) > timeOut) goto fail;
+                        if(long_press)
+                        {
+                            vTaskDelay(100/portTICK_PERIOD_MS);
+                            long_press=0;
+                            goto fail;
+                        }
                     }
                     LCD_setCursor(0, 0);
                     if(led_state==1) 
@@ -1178,14 +1206,16 @@ void Settings_display_task( void * pvParameters)
   
             }
             exit:
-            select=0;
+            select=0;  
             LCD_clearScreen();
             bip(10);
             xSemaphoreGive(Sensor_Semaphore);
+            short_press=0;
         }
        
     }
 }
+
 
 void app_main(void)
 {
@@ -1200,6 +1230,9 @@ void app_main(void)
  
     //Init wifi
     initialise_wifi();
+
+    //init sttp for update time from internet
+    initialize_sntp();
 
     //init mqtt data subscribe function
     mqtt_set_callback_data_subscribed(mqtt_event_data_callback);
@@ -1216,15 +1249,17 @@ void app_main(void)
     start_webserver();
         */
 
-    //init button and LED indicator for smart config
-    
+    //init button and LED indicator for smart config 
     Button_event_group = xEventGroupCreate();
     input_io_create(GPIO_NUM_32, ANY_EDLE);
    
     input_set_callback(input_even_callback);
     input_set_timeoutButton_callback(button_timeout_callback);
-
     output_io_create(LED);
+
+    //init I2C master
+    if(i2c_master_init(I2C_NUM_0, SDA_PIN, SCL_PIN) != ESP_OK)  ESP_LOGE(TAG, "Could not init I2C devices!");
+     else ESP_LOGI(TAG, "I2C devices init successfully");
     
 
     //Init buzzer
@@ -1241,11 +1276,12 @@ void app_main(void)
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
 
     //Timer for button, time out = 5s
-    xTimers = xTimerCreate("Timmer_for_button_timeout", 3000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
+    xTimers = xTimerCreate("Timmer_for_button_timeout", 2000/portTICK_PERIOD_MS, pdFALSE, (void *) 0, vTimerCallback);
     
     //Create mutex for sensor data value and screen displayment
     Sensor_Semaphore = xSemaphoreCreateMutex();
     Screen_Semaphore = xSemaphoreCreateMutex();
+    
     //init sensors 
     xTaskCreate(Read_sensor_task, "Read_sensor_task", 2048, NULL, 3, NULL);
 
@@ -1255,4 +1291,9 @@ void app_main(void)
     //Settings and display sensor data to LCD
     xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
 
+    setClock();
+
+  
+
+    
 }

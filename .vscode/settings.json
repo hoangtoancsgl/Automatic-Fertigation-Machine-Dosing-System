@@ -23,7 +23,10 @@
     "string_view": "c",
     "array": "c",
     "string": "c",
-    "sys.h": "c"
+    "sys.h": "c",
+    "ds3231.h": "c",
+    "i2cdev.h": "c",
+    "esp_sntp.h": "c"
   },
   "liveServer.settings.port": 5501,
   "idf.adapterTargetName": "esp32"
