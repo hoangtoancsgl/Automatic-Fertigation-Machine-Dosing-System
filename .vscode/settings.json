@@ -26,7 +26,15 @@
     "sys.h": "c",
     "ds3231.h": "c",
     "i2cdev.h": "c",
-    "esp_sntp.h": "c"
+    "esp_sntp.h": "c",
+    "smart_config.h": "c",
+    "sd_card.h": "c",
+    "string.h": "c",
+    "sdmmc_cmd.h": "c",
+    "spi_common.h": "c",
+    "sdmmc_host.h": "c",
+    "esp_vfs_fat.h": "c",
+    "esp_http_server.h": "c"
   },
   "liveServer.settings.port": 5501,
   "idf.adapterTargetName": "esp32"

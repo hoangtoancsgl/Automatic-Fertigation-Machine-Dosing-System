@@ -30,6 +30,10 @@
 #include "HD44780.h"
 #include "i2cdev.h"
 #include "ds3231.h"
+#include "sd_card.h"
+
+
+
 
 static const char *TAG = "MAIN";
 
@@ -54,6 +58,20 @@ typedef struct Data_Send
     
 }Data;
 
+typedef struct time
+{
+    int year;
+    int month;
+    int day;
+
+    int hour;
+    int minute;
+    int second;
+    
+}time_Data;
+
+
+
 //buffer for sensors data
 char JSON_buff[100];
 
@@ -63,6 +81,8 @@ char mac_buff[12];
 char data_buff[100];
 char status_buff[100];
 char config_buff[100];
+
+char filename_arr[20];
 
 
 /*LED state for wifi connection:
@@ -152,12 +172,14 @@ void bip(int time)
 }
 
 //Genarate JSON data from sensor output
-char* GenData(Data myData)
+char* GenData(Data myData, time_Data mytimeData, bool type)
 {
     char str_PH[100];
     char str_TDS[100];
     char str_temp[100];
+    char str_time[10];
     
+
     for(int i=0;i<100;i++)
     {
         str_PH[i]=0;
@@ -166,6 +188,24 @@ char* GenData(Data myData)
         
         JSON_buff[i]=0;
     }
+
+    if(type)
+    {
+        sprintf(str_time, mytimeData.year<10 ? "0%d" : "%d", mytimeData.year);
+        strcat(JSON_buff, str_time);
+        sprintf(str_time, mytimeData.month<10 ? "/0%d" : "/%d", mytimeData.month);
+        strcat(JSON_buff, str_time);
+        sprintf(str_time, mytimeData.day<10 ? "/0%d   " : "/%d   ", mytimeData.day);
+        strcat(JSON_buff, str_time);
+
+        sprintf(str_time, mytimeData.hour<10 ? "0%d" : "%d", mytimeData.hour);
+        strcat(JSON_buff, str_time);
+        sprintf(str_time, mytimeData.minute<10 ? ":0%d" : ":%d", mytimeData.minute);
+        strcat(JSON_buff, str_time);
+        sprintf(str_time, mytimeData.second<10 ? ":0%d   " : ":%d   ", mytimeData.second);
+        strcat(JSON_buff, str_time);
+    }
+
     sprintf(str_PH, "%0.1f", myData.PH);
     sprintf(str_TDS, "%d", myData.TDS);
     sprintf(str_temp, "%0.1f", myData.temperature);
@@ -489,17 +529,25 @@ void Mqtt_communication_task( void * pvParameters)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
         Data myData = {ph_value, tds_value, temp_value};
-
-        mqtt_publish_data(data_buff, GenData(myData));
-        
+        //Get time from RTC
         if(getClock(&year, &month, &day, &hour, &minute, &second, &temp) == ESP_OK) 
         {
-            ESP_LOGI(TAG, "%04d-%02d-%02d %02d:%02d:%02d, %.2f deg Cel", year, month, day, hour, minute, second, temp);                             
+            ESP_LOGI(TAG, "Time: %04d-%02d-%02d %02d:%02d:%02d, %.2f deg Cel", year, month, day, hour, minute, second, temp);                             
         }
-        else ESP_LOGE(TAG, "ERROR!");
+
+        time_Data mytimeData = {year, month, day, hour, minute, second};
         
+        //Publish data to MQTT broker
+        mqtt_publish_data(data_buff, GenData(myData, mytimeData, 0));
+
+        //Write log to SD card
+        
+        // ESP_LOGI(TAG, "%s", creat_file_name(day));
+
+        sd_card_write_file(creat_file_name(day), (hour == 0 && minute <2 ) ? 1 : 0, GenData(myData, mytimeData, 1));
+
         xSemaphoreGive(Sensor_Semaphore);
-        vTaskDelay(5000/portTICK_RATE_MS);
+        vTaskDelay(60*1000/portTICK_RATE_MS);
     }
 }
 
@@ -1234,6 +1282,13 @@ void app_main(void)
     //init sttp for update time from internet
     initialize_sntp();
 
+    //init SD card
+    if(init_sd_card() !=ESP_OK) 
+        ESP_LOGE(TAG, "Init sd card fail");
+
+    // sd_card_write_file("/sdcard/log1.txt", 0, "Data day 1st" );
+
+
     //init mqtt data subscribe function
     mqtt_set_callback_data_subscribed(mqtt_event_data_callback);
 
@@ -1258,9 +1313,7 @@ void app_main(void)
     output_io_create(LED);
 
     //init I2C master
-    if(i2c_master_init(I2C_NUM_0, SDA_PIN, SCL_PIN) != ESP_OK)  ESP_LOGE(TAG, "Could not init I2C devices!");
-     else ESP_LOGI(TAG, "I2C devices init successfully");
-    
+    i2c_master_init(I2C_NUM_0, SDA_PIN, SCL_PIN);
 
     //Init buzzer
     output_io_create(BUZZ);
@@ -1291,9 +1344,7 @@ void app_main(void)
     //Settings and display sensor data to LCD
     xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
 
+    //Get time from internet and save to DS3231 RTC
     setClock();
 
-  
-
-    
 }
