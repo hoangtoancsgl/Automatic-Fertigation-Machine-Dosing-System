@@ -25,6 +25,7 @@ static const char *TAG = "SD_CARD";
 #define PIN_NUM_CS   13
 
 extern char filename_arr[20];
+extern bool sd_card_status;
 
 esp_err_t init_sd_card(void)
 {
@@ -79,19 +80,20 @@ esp_err_t init_sd_card(void)
     return ESP_OK;
 }
 
-
 esp_err_t sd_card_write_file(char *file_name, bool write_type, char *data)
 {
     FILE* f = fopen(file_name, write_type ? "w" : "a");
 
     if (f == NULL) {
         ESP_LOGE(TAG, "Failed to open file for writing");
+        sd_card_status = 0;
         return 1;
     }
     fprintf(f, data);
     fprintf(f, "\n");
     fclose(f);
     ESP_LOGI(TAG, "%s", write_type ? "Overwritten successfully" : "Write successfully");
+    sd_card_status = 1;
     return ESP_OK;
 }
 
@@ -106,27 +108,4 @@ char* creat_file_name(int day)
     return filename_arr;
 }  
 
-//     // Open renamed file for reading
-//     ESP_LOGI(TAG, "Reading file");
-//     f = fopen(MOUNT_POINT"/foo.txt", "r");
-//     if (f == NULL) {
-//         ESP_LOGE(TAG, "Failed to open file for reading");
-//         return;
-//     }
 
-//     char line[64];
-//     fgets(line, sizeof(line), f);
-//     fclose(f);
-//     // strip newline
-//     char* pos = strchr(line, '\n');
-//     if (pos) {
-//         *pos = '\0';
-//     }
-//     ESP_LOGI(TAG, "Read from file: '%s'", line);
-
-//     // All done, unmount partition and disable SDMMC or SPI peripheral
-//     esp_vfs_fat_sdcard_unmount(mount_point, card);
-//     ESP_LOGI(TAG, "Card unmounted");
-
-//     spi_bus_free(host.slot);
-// }

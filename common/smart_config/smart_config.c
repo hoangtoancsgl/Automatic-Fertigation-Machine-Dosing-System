@@ -43,10 +43,12 @@ static const char *TAG = "SMART_CONFIG";
 
 extern float tds_set_value, tds_deadband_value, ph_deadband_value, ph_set_value;
 extern int Voltage_686, Voltage_401;
+extern float k_value;
+extern float Nu_ratio;
 
 wifi_config_t wifi_config;
 
-void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, float ph_set_value, float ph_deadband_value, int Voltage_686, int Voltage_401)
+void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, float ph_set_value, float ph_deadband_value, int Voltage_686, int Voltage_401, float k_value, float Nu_ratio)
 {
     ESP_LOGI(TAG, "Opening Non-Volatile Storage (NVS) handle to write config value... ");
     nvs_handle_t my_handle;
@@ -73,6 +75,12 @@ void write_config_value_to_flash(int tds_set_value, int tds_deadband_value, floa
         // printf((err != ESP_OK) ? "ph set value Failed!\n" : "Done\n");
 
         err = nvs_set_i16(my_handle, "ph_db_value", (int)(ph_deadband_value*10));
+        // printf((err != ESP_OK) ? "ph deadband value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "k_value", (int)(k_value*1000));
+        // printf((err != ESP_OK) ? "ph deadband value Failed!\n" : "Done\n");
+
+        err = nvs_set_i16(my_handle, "Nu_ratio", (int)(Nu_ratio*1000));
         // printf((err != ESP_OK) ? "ph deadband value Failed!\n" : "Done\n");
 
         // printf("Committing updates in NVS ... ");
@@ -120,6 +128,13 @@ void read_config_value_from_flash()
         // printf((err != ESP_OK) ? "ph deadband value value Failed!\n" : "Done\n");
         ph_deadband_value = (float)t/10;
 
+        err = nvs_get_i16(my_handle, "k_value", &t);
+        // printf((err != ESP_OK) ? "ph deadband value value Failed!\n" : "Done\n");
+        k_value = (float)t/1000;
+
+        err = nvs_get_i16(my_handle, "Nu_ratio", &t);
+        // printf((err != ESP_OK) ? "ph deadband value value Failed!\n" : "Done\n");
+        Nu_ratio = (float)t/1000;
 
     }
 

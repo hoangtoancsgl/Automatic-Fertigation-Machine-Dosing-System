@@ -58,7 +58,7 @@ void init_adc1(void)
     esp_adc_cal_characterize(ADC_UNIT_1, atten, width, DEFAULT_VREF, adc_chars);
 }
 
-float adc_read_tds_sensor()
+float adc_read_tds_sensor_voltage()
 {
     uint32_t TDS_sensor_value = 0;
     //Multisampling
@@ -80,7 +80,7 @@ float adc_read_tds_sensor()
         return esp_adc_cal_raw_to_voltage(TDS_sensor_value, adc_chars)-15;
 }
 
-float adc_read_ph_sensor()
+float adc_read_ph_sensor_voltage()
 {
     uint32_t PH_sensor_value = 0;
     //Multisampling
@@ -101,3 +101,23 @@ float adc_read_ph_sensor()
     else 
         return esp_adc_cal_raw_to_voltage(PH_sensor_value, adc_chars)-15;
 }
+
+int read_tds_sensor(float tds_voltage, float temp_value, float k_value)
+{
+    //Convert mV to Vol
+    tds_voltage /= 1000;
+    float compensationCoefficient=1.0+0.02*(temp_value-25.0);    //temperature compensation formula: fFinalResult(25^C) = fFinalResult(current)/(1.0+0.02*(fTP-25.0));
+    float compensationVolatge=tds_voltage/compensationCoefficient;  //temperature compensation
+
+    return (int)(133.42*compensationVolatge*compensationVolatge*compensationVolatge - 255.86*compensationVolatge*compensationVolatge + 857.39*compensationVolatge)*k_value; //convert voltage value to tds value
+
+}
+
+float read_ph_sensor(float ph_voltage, float Voltage_686, float Voltage_401)
+{
+    float slope = (6.86-4.01)/((Voltage_686-1500.0)/3.0 - (Voltage_401-1500.0)/3.0);  // two point: (_neutralVoltage,6.86),(_acidVoltage,4.01)
+    float intercept =  6.86 - slope*(Voltage_686-1500.0)/3.0;
+
+    return slope*(ph_voltage-1500.0)/3.0+intercept;  //y = k*x + b
+}
+
