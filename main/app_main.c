@@ -63,6 +63,7 @@ typedef struct Data_Send
 
     int Nutri_A;
     int Nutri_B;
+    float Nutri_Ratio;
     int Acid_So;
     int Base_So;
 
@@ -83,9 +84,8 @@ typedef struct time
 }time_Data;
 
 
-
 //buffer for data sent
-char JSON_buff[200];
+char JSON_buff[300];
 
 
 //buffer for device ID 
@@ -119,9 +119,18 @@ bool sd_card_status = 0;
 #define Pum_Acid GPIO_NUM_21
 #define Pum_Base GPIO_NUM_22
 
+#define Pum_Water GPIO_NUM_17
+
+//Limited water sensor
+#define Lim_Sen_High GPIO_NUM_36
+#define Lim_Sen_low GPIO_NUM_39
+
 
 //volume of liquid in 1 pump (ml)
 #define Pum_liquid 10
+
+////volume of added water (ml)
+#define Volume_liquid_water 1000
 
 //Time for 1 pump (ticks)
 #define Time_1_pump 50
@@ -159,7 +168,7 @@ static float temp_value=0 , tds_value=0, ph_value=0;
 
 //Sensor calibration value
 //PH sensor calibration values
-int Voltage_686, Voltage_401;
+int Voltage_686 = 1000, Voltage_401 = 2000;
 int ph_vol;
 
 //TDS sensor calibration values
@@ -220,6 +229,7 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
 
     char str_NutriA[100];
     char str_NutriB[100];
+    char str_Nutri_Ratio[100];
     char str_Acid_So[100];
     char str_Base_So[100];
 
@@ -244,6 +254,7 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
 
         str_NutriA[i]=0;
         str_NutriB[i]=0;
+        str_Nutri_Ratio[i] = 0;
         str_Acid_So[i]=0;
         str_Base_So[i]=0;
 
@@ -279,6 +290,7 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
     sprintf(str_TDS_set, "%d", myData.TDS_set);
 
     sprintf(str_NutriA, "%d", myData.Nutri_A);
+    sprintf(str_Nutri_Ratio, "%0.3f", myData.Nutri_Ratio);
     sprintf(str_NutriB, "%d", myData.Nutri_B);
     
     sprintf(str_Acid_So, "%d", myData.Acid_So);
@@ -326,6 +338,18 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
     strcat(JSON_buff, str_NutriB);
     strcat(JSON_buff, "\",");
 
+    strcat(JSON_buff, "\"Nutri_Ratio\":\"");
+    strcat(JSON_buff, str_Nutri_Ratio);
+    strcat(JSON_buff, "\",");
+
+    strcat(JSON_buff, "\"Acid_So\":\"");
+    strcat(JSON_buff, str_Acid_So);
+    strcat(JSON_buff, "\",");
+
+    strcat(JSON_buff, "\"Base_So\":\"");
+    strcat(JSON_buff, str_Base_So);
+    strcat(JSON_buff, "\",");
+
     strcat(JSON_buff, "\"Water\":\"");
     strcat(JSON_buff, str_Water);
 
@@ -370,6 +394,7 @@ void input_even_callback(int pin, uint64_t tick)
         //     xEventGroupSetBitsFromISR(Button_event_group, BIT_LONG_PRESS,  &xHigherPriorityTaskWoken);
         // }
     }
+
 }
 
 void button_timeout_callback(int pin)
@@ -724,7 +749,7 @@ void Mqtt_communication_task( void * pvParameters)
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
-        Data myData = {ph_value, tds_value, temp_value, ph_set_value, tds_set_value, ph_deadband_value, tds_deadband_value, Nutri_A, Nutri_B, Acid_So, Base_So, Water};
+        Data myData = {ph_value, tds_value, temp_value, ph_set_value, tds_set_value, ph_deadband_value, tds_deadband_value, Nutri_A, Nutri_B, Nu_ratio, Acid_So, Base_So, Water};
 
         //Get time from RTC
         if(getClock(&year, &month, &day, &hour, &minute, &second, &temp) == ESP_OK) 
@@ -740,7 +765,7 @@ void Mqtt_communication_task( void * pvParameters)
         //Write log to SD card
         sd_card_write_file(creat_file_name(day), (hour == 0 && minute <2 ) ? 1 : 0, GenData(myData, mytimeData, 1));
         
-        Nutri_A = 0; Nutri_B = 0; Water = 0;
+        Nutri_A = 0; Nutri_B = 0; Acid_So = 0; Base_So = 0; Water = 0;
         // printf("Nutrent ratio : %0.3f\n", Nu_ratio);
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelayUntil(&xLastWakeTime, xTime );    
@@ -1613,6 +1638,7 @@ void Pum_ctr_task(void * pvParameters)
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
+        vTaskDelay(1);
         if((tds_set_value - tds_value) > tds_deadband_value)
         {
             
@@ -1671,6 +1697,8 @@ void Pum_ctr_task(void * pvParameters)
                 if(xTaskGetTickCount() - pump_time > time_pump_Acid_Base)
                 {
                     output_io_set_level(Pum_Acid, 0);
+                    Acid_So += Pum_liquid;
+                    printf("Acid So : %d\n", Acid_So);
                     break;
                 }
             }
@@ -1685,18 +1713,46 @@ void Pum_ctr_task(void * pvParameters)
                 if(xTaskGetTickCount() - pump_time > time_pump_Acid_Base)
                 {
                     output_io_set_level(Pum_Base, 0);
+                    Base_So += Pum_liquid;
+                    printf("Base So : %d\n", Base_So);
                     break;
                 }
             }
         }
+
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelayUntil(&xLastWakeTime, xTime );    
     }
     
 }
 
-
-
+void Water_Pum_ctr_task(void *pvParameters)
+{
+    bool Water_Flag = 0;
+    while(1)
+    {
+        //Water pump control
+        if(input_io_get_level(Lim_Sen_High) && input_io_get_level(Lim_Sen_low)) 
+        {
+            output_io_set_level(Pum_Water, 0);
+            printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
+            if(Water_Flag) Water = Volume_liquid_water; 
+            Water_Flag = 0;
+        }
+        else if(!input_io_get_level(Lim_Sen_High) && !input_io_get_level(Lim_Sen_low)) 
+        {
+            output_io_set_level(Pum_Water, 1);
+            printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
+            Water_Flag = 1;
+        }
+        else if(!input_io_get_level(Lim_Sen_High) && input_io_get_level(Lim_Sen_low)) 
+        {
+            if(input_io_get_level(Pum_Water)) output_io_set_level(Pum_Water, 1);
+            else output_io_set_level(Pum_Water, 0);
+        }
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+}
 
 void app_main(void)
 {
@@ -1755,6 +1811,14 @@ void app_main(void)
     output_io_create(Pum_Acid);
     output_io_create(Pum_Base);
 
+    //Init water pump and 2 level sensor
+    output_io_create(Pum_Water);
+    output_io_set_level(Pum_Water, 0);
+
+    input_io_create(Lim_Sen_High, ANY_EDLE);
+    input_io_create(Lim_Sen_low, ANY_EDLE);
+
+
     //Tasks for smart config
     xTaskCreate(Led_task, "LED_task", 2048, NULL, 3, NULL);
     xTaskCreate(Button_Task, "ButtonTask", 2048, NULL, 3, NULL);
@@ -1776,10 +1840,21 @@ void app_main(void)
     xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
 
     vTaskDelay(3000/portTICK_PERIOD_MS);
-    //Pumb control task
+    
+    // Nutrient Pumbs control task
     xTaskCreate(Pum_ctr_task, "Pum_ctr_task", 4096, NULL, 3, NULL);
+    
+    //Water Pumbs control task
+    xTaskCreate(Water_Pum_ctr_task, "Water_Pum_ctr_task", 4096, NULL, 3, NULL);
+
 
     //Get time from internet and save to DS3231 RTC every starting
     setClock();
+    while(1)
+    {
+        
+        // output_io_set_level(Pum_Water, !input_io_get_level(Pum_Water));
+        // vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
 
 }
