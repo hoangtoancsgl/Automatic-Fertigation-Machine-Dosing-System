@@ -9,8 +9,8 @@
 
 #define	CONFIG_TIMEZONE		7
 #define NTP_SERVER 		"pool.ntp.org"
-#define SDA_PIN  26
-#define SCL_PIN  25
+#define SDA_PIN  27
+#define SCL_PIN  26
 
 #define DS3231_ADDR 0x68 //!< I2C address
 

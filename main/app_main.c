@@ -38,11 +38,11 @@
 static const char *TAG = "MAIN";
 
 //EC11 encoder for settings
-#define ROT_ENC_A_GPIO 27
+#define ROT_ENC_A_GPIO 25
 #define ROT_ENC_B_GPIO 33
 
 // Set to true to enable tracking of rotary encoder at half step resolution
-#define ENABLE_HALF_STEPS true  
+#define ENABLE_HALF_STEPS 0 
 
 //LCD 20x4 pins define
 #define LCD_ADDR 0x27
@@ -114,10 +114,10 @@ bool sd_card_status = 0;
 #define BUZZ GPIO_NUM_23
 
 //4 peristaltic pump
-#define Pum_NutriA GPIO_NUM_18
-#define Pum_NutriB GPIO_NUM_19
-#define Pum_Acid GPIO_NUM_21
-#define Pum_Base GPIO_NUM_22
+#define Pum_NutriA GPIO_NUM_22
+#define Pum_NutriB GPIO_NUM_21
+#define Pum_Acid GPIO_NUM_19
+#define Pum_Base GPIO_NUM_18
 
 #define Pum_Water GPIO_NUM_17
 
@@ -660,7 +660,8 @@ void Read_sensor_task( void * pvParameters)
 
     //DS18B20 on GPIO 4
     ds18b20_init(4);
-    
+    float last_temp = 29, last_tds = 300, last_ph = 5;
+
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
@@ -671,6 +672,10 @@ void Read_sensor_task( void * pvParameters)
         tds_value = read_tds_sensor(adc_read_tds_sensor_voltage(), temp_value, k_value);
         ph_value = read_ph_sensor(adc_read_ph_sensor_voltage(), Voltage_686, Voltage_401);
 
+        if(temp_value > 50) temp_value = last_temp; else last_temp = temp_value;
+        if(ph_value > 14) ph_value = last_ph; else last_ph = ph_value;
+        if(tds_value < 50 || tds_value > 3000) tds_value = last_tds; else last_tds = tds_value;
+        
         xSemaphoreGive(Sensor_Semaphore);
        
         vTaskDelay(1000/portTICK_PERIOD_MS);
@@ -766,7 +771,7 @@ void Mqtt_communication_task( void * pvParameters)
         sd_card_write_file(creat_file_name(day), (hour == 0 && minute <2 ) ? 1 : 0, GenData(myData, mytimeData, 1));
         
         Nutri_A = 0; Nutri_B = 0; Acid_So = 0; Base_So = 0; Water = 0;
-        // printf("Nutrent ratio : %0.3f\n", Nu_ratio);
+        
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelayUntil(&xLastWakeTime, xTime );    
         
@@ -1735,8 +1740,12 @@ void Water_Pum_ctr_task(void *pvParameters)
         if(input_io_get_level(Lim_Sen_High) && input_io_get_level(Lim_Sen_low)) 
         {
             output_io_set_level(Pum_Water, 0);
-            printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
-            if(Water_Flag) Water = Volume_liquid_water; 
+            
+            if(Water_Flag) 
+            {
+                Water = Volume_liquid_water; 
+                printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
+            }
             Water_Flag = 0;
         }
         else if(!input_io_get_level(Lim_Sen_High) && !input_io_get_level(Lim_Sen_low)) 
@@ -1753,6 +1762,8 @@ void Water_Pum_ctr_task(void *pvParameters)
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 }
+
+
 
 void app_main(void)
 {
@@ -1815,8 +1826,11 @@ void app_main(void)
     output_io_create(Pum_Water);
     output_io_set_level(Pum_Water, 0);
 
-    input_io_create(Lim_Sen_High, ANY_EDLE);
-    input_io_create(Lim_Sen_low, ANY_EDLE);
+    gpio_pad_select_gpio(Lim_Sen_High);
+    gpio_set_direction(Lim_Sen_High, GPIO_MODE_INPUT);
+
+    gpio_pad_select_gpio(Lim_Sen_low);
+    gpio_set_direction(Lim_Sen_low, GPIO_MODE_INPUT);
 
 
     //Tasks for smart config
@@ -1830,31 +1844,24 @@ void app_main(void)
     Sensor_Semaphore = xSemaphoreCreateMutex();
     Screen_Semaphore = xSemaphoreCreateMutex();
     
+    
     //init sensors 
     xTaskCreate(Read_sensor_task, "Read_sensor_task", 2048, NULL, 3, NULL);
-
-    //init and start MQTT communication
-    xTaskCreate(Mqtt_communication_task, "Mqtt_communication_task", 4096, NULL, 3, NULL);
 
     //Settings and display sensor data to LCD
     xTaskCreate(Settings_display_task, "Settings_display_task", 4096, NULL, 3, NULL);
 
-    vTaskDelay(3000/portTICK_PERIOD_MS);
+    //init and start MQTT communication
+    xTaskCreate(Mqtt_communication_task, "Mqtt_communication_task", 4096, NULL, 3, NULL);
     
+    //Get time from internet and save to DS3231 RTC every starting
+    setClock();
+
     // Nutrient Pumbs control task
     xTaskCreate(Pum_ctr_task, "Pum_ctr_task", 4096, NULL, 3, NULL);
-    
+
     //Water Pumbs control task
     xTaskCreate(Water_Pum_ctr_task, "Water_Pum_ctr_task", 4096, NULL, 3, NULL);
 
-
-    //Get time from internet and save to DS3231 RTC every starting
-    setClock();
-    while(1)
-    {
-        
-        // output_io_set_level(Pum_Water, !input_io_get_level(Pum_Water));
-        // vTaskDelay(1000/portTICK_PERIOD_MS);
-    }
 
 }

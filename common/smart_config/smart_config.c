@@ -27,8 +27,8 @@ extern char config_buff[100];
 
 
 //wifi infor default 
-static char ssid[100]  = "Hoang Vuong";
-static char pass[100] = "1234567890";
+static char ssid[100]  = "Mang Yeu";
+static char pass[100] = "khongcho";
 
 /* The event group allows multiple bits for each event,
    but we only care about one event - are we connected
@@ -329,10 +329,9 @@ void initialise_wifi(void)
     bzero(&wifi_config, sizeof(wifi_config_t));
 
     
-    //Read wifi information form flash
+
     read_wifi_infor_from_flash();
-    // printf("Data read SSID: %s\n", ssid);
-    // printf("Data read PASS: %s\n", pass);
+
 
     memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
     memcpy(wifi_config.sta.password, pass, sizeof(wifi_config.sta.password));
