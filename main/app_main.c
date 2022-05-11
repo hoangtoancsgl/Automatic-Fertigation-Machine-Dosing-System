@@ -68,6 +68,7 @@ typedef struct Data_Send
     int Base_So;
 
     int Water;
+    int8_t ChangeNutri;
     
 }Data;
 
@@ -133,7 +134,7 @@ bool sd_card_status = 0;
 #define Volume_liquid_water 1000
 
 //Time for 1 pump (ticks)
-#define Time_1_pump 50
+#define Time_1_pump 200
 
 /*OTA variable for OTA update
 1 => Looking for a new firmware
@@ -189,6 +190,9 @@ int Nutri_A = 0, Nutri_B = 0, Acid_So = 0, Base_So = 0, Water = 0;
 //Nutrian ratio: Nutrian A/ NutrianB
 float Nu_ratio = 1;
 
+//Bool variable for notifi server when nutrient were changed
+int8_t change_nutri = 0;
+
 //Firmware version
 extern double FIRMWARE_VERSION;
 
@@ -235,6 +239,8 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
 
     char str_Water[100];
 
+    char str_ChangeNutri[100];
+
     char str_time[10];
     
 
@@ -259,6 +265,7 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
         str_Base_So[i]=0;
 
         str_Water[i]=0;
+        str_ChangeNutri[i] = 0;
     }
 
 
@@ -297,6 +304,7 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
     sprintf(str_Base_So, "%d", myData.Base_So);
 
     sprintf(str_Water, "%d", myData.Water);
+    sprintf(str_ChangeNutri, "%d", myData.ChangeNutri);
 
    
     //{"PH":"123","EC":"256", "TDS": "1", "temp":"23"}
@@ -352,6 +360,10 @@ char* GenData(Data myData, time_Data mytimeData, bool type)
 
     strcat(JSON_buff, "\"Water\":\"");
     strcat(JSON_buff, str_Water);
+    strcat(JSON_buff, "\",");
+
+    strcat(JSON_buff, "\"ChangeNutri\":\"");
+    strcat(JSON_buff, str_ChangeNutri);
 
 
     strcat(JSON_buff, "\"}");
@@ -668,11 +680,12 @@ void Read_sensor_task( void * pvParameters)
         
         //Read temperature value
         temp_value = ds18b20_get_temp();
-
+        if(temp_value > 50) temp_value = last_temp; else last_temp = temp_value;
+        
         tds_value = read_tds_sensor(adc_read_tds_sensor_voltage(), temp_value, k_value);
         ph_value = read_ph_sensor(adc_read_ph_sensor_voltage(), Voltage_686, Voltage_401);
 
-        if(temp_value > 50) temp_value = last_temp; else last_temp = temp_value;
+        
         if(ph_value > 14) ph_value = last_ph; else last_ph = ph_value;
         if(tds_value < 50 || tds_value > 3000) tds_value = last_tds; else last_tds = tds_value;
         
@@ -754,7 +767,7 @@ void Mqtt_communication_task( void * pvParameters)
     while(1)
     {
         xSemaphoreTake( Sensor_Semaphore, portMAX_DELAY );
-        Data myData = {ph_value, tds_value, temp_value, ph_set_value, tds_set_value, ph_deadband_value, tds_deadband_value, Nutri_A, Nutri_B, Nu_ratio, Acid_So, Base_So, Water};
+        Data myData = {ph_value, tds_value, temp_value, ph_set_value, tds_set_value, ph_deadband_value, tds_deadband_value, Nutri_A, Nutri_B, Nu_ratio, Acid_So, Base_So, Water, change_nutri};
 
         //Get time from RTC
         if(getClock(&year, &month, &day, &hour, &minute, &second, &temp) == ESP_OK) 
@@ -770,7 +783,7 @@ void Mqtt_communication_task( void * pvParameters)
         //Write log to SD card
         sd_card_write_file(creat_file_name(day), (hour == 0 && minute <2 ) ? 1 : 0, GenData(myData, mytimeData, 1));
         
-        Nutri_A = 0; Nutri_B = 0; Acid_So = 0; Base_So = 0; Water = 0;
+        Nutri_A = 0; Nutri_B = 0; Acid_So = 0; Base_So = 0; Water = 0; change_nutri = 0;
         
         xSemaphoreGive(Sensor_Semaphore);
         vTaskDelayUntil(&xLastWakeTime, xTime );    
@@ -857,7 +870,7 @@ void Settings_display_task( void * pvParameters)
             LCD_setCursor(1, 2);
             LCD_writeStr("About");
             LCD_setCursor(1, 3);
-            LCD_writeStr("Exit");
+            LCD_writeStr("Restart");
             
             next:
             xStart = xTaskGetTickCount();
@@ -913,6 +926,8 @@ void Settings_display_task( void * pvParameters)
                     LCD_writeStr("TDS Sensor");
                     LCD_setCursor(1, 1);
                     LCD_writeStr("PH Sensor");
+                    LCD_setCursor(1, 2);
+                    LCD_writeStr("Pumps test");
                     select =0;
                     while(1)
                     {
@@ -922,7 +937,7 @@ void Settings_display_task( void * pvParameters)
                         if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
                         {
                             event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
-                            if(select<0 || select>1) select=0;
+                            if(select<0 || select>2) select=0;
                         
                         }   
                         if(short_press) 
@@ -935,8 +950,76 @@ void Settings_display_task( void * pvParameters)
                         
                     }
 
+                    //Test pumps
+                    if(select==2)
+                    {
+                        test_pump:
+                        LCD_clearScreen();
+                        LCD_setCursor(1, 0);
+                        LCD_writeStr("A nutrient pump");
+                        LCD_setCursor(1, 1);
+                        LCD_writeStr("B nutrient pump");
+                        LCD_setCursor(1, 2);
+                        LCD_writeStr("Acid pump"); 
+                        LCD_setCursor(1, 3);
+                        LCD_writeStr("Base pump"); 
+                        select = 0;
+                        while(1)
+                        {
+                            if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
+
+                            Display_Settings_1(select);
+                            if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
+                            {
+                                event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                                if(select<0 || select>3) select=0;
+                            
+                            }   
+                            if(short_press) 
+                            {
+                                bip(1);
+                                short_press = 0;
+                                LCD_clearScreen();
+                                break;
+                            }
+                            if(long_press)
+                            {
+                                long_press = 0;
+                                goto exit;
+                            }
+                            
+                        }
+                        LCD_writeStr("Testing...");
+                        switch(select)
+                        {
+                            case 0:
+                                output_io_set_level(Pum_NutriA, 1);  
+                                vTaskDelay(5000/portTICK_PERIOD_MS);
+                                output_io_set_level(Pum_NutriA, 0);  
+                                goto test_pump;
+                            case 1:
+                                output_io_set_level(Pum_NutriB, 1);  
+                                vTaskDelay(5000/portTICK_PERIOD_MS);
+                                output_io_set_level(Pum_NutriB, 0);  
+                                goto test_pump;
+                            case 2:
+                                output_io_set_level(Pum_Acid, 1);  
+                                vTaskDelay(5000/portTICK_PERIOD_MS);
+                                output_io_set_level(Pum_Acid, 0);  
+                                goto test_pump;
+                            case 3:
+                                output_io_set_level(Pum_Base, 1);  
+                                vTaskDelay(5000/portTICK_PERIOD_MS);
+                                output_io_set_level(Pum_Base, 0);  
+                                goto test_pump;
+                            default:
+                                goto test_pump;
+                        }
+
+
+                    }
                     //PH sensor
-                    if(select)
+                    else if(select==1)
                     {
                         int8_t count;
                         int8_t first_solution = 0;
@@ -1045,7 +1128,7 @@ void Settings_display_task( void * pvParameters)
                     }
                     
                     //TDS sensor 
-                    else
+                    else if(select==0)
                     {
                         LCD_setCursor(1, 0);
                         LCD_writeStr("342 ppm Solution");
@@ -1135,6 +1218,8 @@ void Settings_display_task( void * pvParameters)
                     LCD_writeStr("TDS and PH values");
                     LCD_setCursor(1, 1);
                     LCD_writeStr("Nutrient Ratio");
+                    LCD_setCursor(1, 2);
+                    LCD_writeStr("Change nutrient");
                     select =0;
                     while(1)
                     {
@@ -1144,7 +1229,7 @@ void Settings_display_task( void * pvParameters)
                         if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
                         {
                             event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
-                            if(select<0 || select>1) select=0;
+                            if(select<0 || select>2) select=0;
                         
                         }   
                         if(short_press) 
@@ -1157,8 +1242,15 @@ void Settings_display_task( void * pvParameters)
                         }
                         
                     }
-
-                    if(!select)
+                    //Save change nutrient notification for next data sending
+                    if(select ==2 )
+                    {
+                        LCD_writeStr("Notification saved!");
+                        change_nutri = 1;
+                        vTaskDelay(2000/portTICK_PERIOD_MS);
+                        goto exit;
+                    }
+                    else if(select == 0)
                     {
                         a:   
                         Display_sensors_settings();
@@ -1214,7 +1306,7 @@ void Settings_display_task( void * pvParameters)
                                             {
                                                 event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? tds_deadband_value+=5 : (tds_deadband_value-=5);
                                                 if(tds_deadband_value<50) tds_deadband_value=50;
-                                                if(tds_deadband_value>200) tds_deadband_value=200;
+                                                if(tds_deadband_value>300) tds_deadband_value=300;
                                             }
                                             if(short_press)
                                             {
@@ -1258,7 +1350,7 @@ void Settings_display_task( void * pvParameters)
                                             {
                                                 event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? ph_deadband_value+=0.1 : (ph_deadband_value-=0.1);
                                                 if(ph_deadband_value<0) ph_deadband_value=0.1;
-                                                if(ph_deadband_value>0.5) ph_deadband_value=0.5;
+                                                if(ph_deadband_value>1) ph_deadband_value=1;
                                             }
                                             if(short_press)
                                             {
@@ -1289,7 +1381,7 @@ void Settings_display_task( void * pvParameters)
                         }
 
                     }
-                    else
+                    else if(select==1)
                     //Nutrient ratio
                     {
                         int NuA = 1, NuB = 1;
@@ -1556,6 +1648,49 @@ void Settings_display_task( void * pvParameters)
                         vTaskDelay(10/portTICK_PERIOD_MS);
                     }
                     break;
+
+                //Restart
+                case 7:
+                    LCD_clearScreen();
+                    LCD_setCursor(3, 0);
+                    LCD_writeStr("Restart device?");
+                    LCD_setCursor(1, 1);
+                    LCD_writeStr("YES");
+                    LCD_setCursor(1, 2);
+                    LCD_writeStr("NO");
+
+                    select =2;
+                    while(1)
+                    {
+                        if((xTaskGetTickCount() - xStart) > timeOut) goto exit;
+
+                        Display_Settings_1(select);
+                        if (xQueueReceive(event_queue, &event, 1/portTICK_RATE_MS) == pdTRUE)
+                        {
+                            event.state.direction == ROTARY_ENCODER_DIRECTION_CLOCKWISE ? select++ : select--;
+                            if(select<1 || select>2) select=1;
+                        
+                        }   
+                        if(short_press) 
+                        {
+                            short_press = 0;
+                            LCD_clearScreen();
+                            if(select==2) goto exit; else
+                            {
+                                bip(1);
+                                break;
+                            }
+                        }
+
+                    }
+                    LCD_clearScreen();
+                    LCD_setCursor(2, 1);
+                    LCD_writeStr("Restarting...");
+                    vTaskDelay(2000/portTICK_PERIOD_MS);
+                    esp_restart();
+
+                    break;
+                
                 //Factory reset
                 case 5:
                     LCD_clearScreen();
@@ -1745,6 +1880,7 @@ void Water_Pum_ctr_task(void *pvParameters)
             {
                 Water = Volume_liquid_water; 
                 printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
+                printf("Water pump off\n");
             }
             Water_Flag = 0;
         }
@@ -1752,6 +1888,7 @@ void Water_Pum_ctr_task(void *pvParameters)
         {
             output_io_set_level(Pum_Water, 1);
             printf("High/Low: %d - %d\n", input_io_get_level(Lim_Sen_High), input_io_get_level(Lim_Sen_low));
+            printf("Water pump on\n");
             Water_Flag = 1;
         }
         else if(!input_io_get_level(Lim_Sen_High) && input_io_get_level(Lim_Sen_low)) 

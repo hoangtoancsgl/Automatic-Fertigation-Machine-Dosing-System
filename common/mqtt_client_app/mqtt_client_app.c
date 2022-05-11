@@ -70,7 +70,7 @@ static esp_err_t mqtt_event_handler_cb(esp_mqtt_event_handle_t event)
             
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED, retry...");
-            led_state = 4;
+            led_state = 1;
             break;
 
         case MQTT_EVENT_SUBSCRIBED:
