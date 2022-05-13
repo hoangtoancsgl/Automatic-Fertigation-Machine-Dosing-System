@@ -100,8 +100,8 @@ char filename_arr[20];
 
 
 /*LED state for wifi connection:
-    1 => CONNECTED to wifi
-    2 => DISCONNECTED
+    1 => CONNECTED to wifi,DISCONNECTED MQTT
+    2 => DISCONNECTED 
     3 => SMART CONFIG
     4 => MQTT CONNECTED 
 */
@@ -1772,7 +1772,9 @@ void Pum_ctr_task(void * pvParameters)
         time_pump_B = Time_1_pump;
         time_pump_A = (int)(time_pump_B*Nu_ratio);
     }
-    const TickType_t xTime = 20*1000/portTICK_PERIOD_MS;
+    
+    //Check nutrient and control pumps every 5 minutes
+    const TickType_t xTime = 5*60*1000/portTICK_PERIOD_MS;
     xLastWakeTime = xTaskGetTickCount();
     
     while(1)
