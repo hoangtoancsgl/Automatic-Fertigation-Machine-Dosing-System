@@ -5,12 +5,12 @@ const SingleType = ({
 }) => (
   <div className="singleType">
     <div className="value">
-      <div className="type">{type}</div>
-      <div className="TDS">{TDS}</div>
-      <div className="dead_TDS">{dead_TDS}</div>
-      <div className="PH">{PH}</div>
-      <div className="dead_PH">{dead_PH}</div>
-      <div className="nutri_ratio">{nutri_Ratio}</div>
+      <div className="type">Type: {type}</div>
+      <div className="TDS">TDS: {TDS}</div>
+      <div className="dead_TDS">dead_TDS: {dead_TDS}</div>
+      <div className="PH">PH: {PH}</div>
+      <div className="dead_PH">dead_PH: {dead_PH}</div>
+      <div className="nutri_ratio">Nutri Ratio: {nutri_Ratio}</div>
     </div>
 
     <ActionButtons
