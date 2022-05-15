@@ -1,0 +1,261 @@
+  // register
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "trandung1123",
+  "password": "1124"
+}
+
+###
+//login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "trandung",
+  "password": "1124"
+}
+
+//postdata
+###
+POST http://localhost:5000/api/configdata
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+{
+  "device" : "dosing machine",
+  "TDS" : "20",
+  "dead_TDS": "93",
+  "PH": "1",
+  "dead_PH":"5",
+  "nutri_Ratio":"1"
+}
+
+###
+
+//post setvolume
+###
+POST http://localhost:5000/api/setvolume
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
+
+{
+  "device":"58bf251706a0", 
+  "Nutri_A_full":"0", 
+  "Nutri_B_full":"40", 
+  "Water_full":"20", 
+  "Acid_So_full":"30", 
+  "Base_So_full":"50" 
+}
+###
+GET http://localhost:5000/api/setvolume
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+//post setvolume
+###
+POST http://localhost:5000/api/totalvolume
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
+
+{
+  "device":"58bf251706a0", 
+  "Nutri_A":"0", 
+  "Nutri_B":"40", 
+  "Water":"20", 
+  "Acid_So":"30", 
+  "Base_So":"50" 
+}
+
+###
+GET http://localhost:5000/api/typemodal
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+###
+POST http://localhost:5000/api/typemodal
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+{
+  "typeModal" : "cay sau rieng ",
+  "TDSModal" : "20",
+  "dead_TDSModal": "93",
+  "PHModal": "1",
+  "dead_PHModal":"5",
+  "nutri_RatioModal":"1"
+}
+###
+GET http://localhost:5000/api/data/chart
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+###
+PUT http://localhost:5000/api/setvolume/627cb55140b79c4f6b70b15b
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
+
+{
+  "device":"58bf251706a0", 
+  "Nutri_A_full":"1050", 
+  "Nutri_B_full":"40", 
+  "Water_full":"20", 
+  "Acid_So_full":"30", 
+  "Base_So_full":"50" 
+}
+
+###
+GET http://localhost:5000/api/totalvolume
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+
+###
+GET http://localhost:5000/api/changenutri
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+###
+POST http://localhost:5000/api/changenutri
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
+
+{
+  "device":"58bf251706a0", 
+  "Nutri_A":"0", 
+  "Nutri_B":"0", 
+  "Water":"0", 
+  "Acid_So":"0", 
+  "Base_So":"0" 
+}
+
+###
+PUT http://localhost:5000/api/setvolume/627cfae8aab7bf190410ceb7
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
+
+{
+  "device":"58bf251706a0", 
+  "Nutri_A_full":"1", 
+  "Nutri_B_full":"1", 
+  "Water_full":"1", 
+  "Acid_So_full":"30", 
+  "Base_So_full":"50" 
+}
+###
+
+POST http://localhost:5000/api/configdata/configtype
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+{
+  "type" : "Cay xoai",
+  "TDS" : "20",
+  "dead_TDS": "9",
+  "PH": "12",
+  "dead_PH":"53",
+  "nutri_Ratio":"11"
+}
+// get all type
+
+###
+GET http://localhost:5000/api/configdata/configtype
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc0ODM1MDl9.5qPK13k8LMnOvHGECBfoMnQaK2Pka-mPiggZzQvRSdI
+
+###
+GET http://localhost:5000/api/configdata
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc0ODM1MDl9.5qPK13k8LMnOvHGECBfoMnQaK2Pka-mPiggZzQvRSdI
+
+
+//update config type
+###25e2a1
+PUT http://localhost:5000/api/configdata/configtype/625e2a13182a5cb2cb81ac34
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+{
+  "type" : "Cay bap cai",
+  "TDS" : "20",
+  "dead_TDS": "9",
+  "PH": "12",
+  "dead_PH":"53",
+  "nutri_Ratio":"11"
+}
+###
+PUT http://localhost:5000/api/configdata/configtype/625e2a14182a5cb2cb81ac36
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+{
+  "type" : "Cay  cai",
+  "TDS" : "20",
+  "dead_TDS": "912",
+  "PH": "12",
+  "dead_PH":"53",
+  "nutri_Ratio":"11",
+}
+
+//postdevice
+###
+POST http://localhost:5000/api/device 
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MjYzYzkzNDM5MTNjZTUxNDU2MzFkZjYiLCJpYXQiOjE2NTA3MDcxMjh9.N6KvXHwjcQc-cME8lWjTlsmYDVMtybW9kIf4kAkRl_U
+
+{
+  "device" : "083af2529f4c"
+}
+//get last data
+###
+GET http://localhost:5000/api/configdata
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc0ODM1MDl9.5qPK13k8LMnOvHGECBfoMnQaK2Pka-mPiggZzQvRSdI
+
+//get last state
+###
+GET http://localhost:5000/api/data/chart
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc2NDk1OTl9.WT2HxyMEkcigje1G-km-iOeRgiNXy4cS90CbJbaSpkM
+
+
+//update data
+###
+PUT http://localhost:5000/api/data/62582ae43d355f5d29f0de50
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+{
+  "device" : "desktop",
+  "temperature" : "53",
+  "DTS": "510",
+  "PH": "123",
+  "PH_set": "123",
+  "TDS_set": "123",
+  "PH_dead": "123",
+  "TDS_dead": "123",
+  "Nutri_A" : "3",
+  "Nutri_B" : "1"
+}
+}
+
+//delete post
+###
+DELETE  http://localhost:5000/api/data/62582aa73d355f5d29f0de4e
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+
+//delete post
+###
+DELETE  http://localhost:5000/api/configdata/configtype/625e2e345283c61a8df15a37
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDA4NTEzNDl9.dxD1L5_7o24TmXzNPw0aXEB-Dw2Z6j9BHjkGgkZr6ro
+
+//https://www.techtarget.com/searchenterpriseai/feature/Agricultural-AI-yields-better-crops-through-data-analytics
+
+
+if (dataName === "data") {
+        dbo.collection("devices").findOne({"device": deviceId})(function (
+          err,
+          result
+        ) {
+          if (!result) {
+            console.log("device not found");
+          } else (dataName === "data")
+          {
+            dbo.collection(dataName).insertOne(myobj, (error, res) => {
+              if (error) throw error;
+              console.log("1 document inserted");
+            });
+          }
+        });
+      }
