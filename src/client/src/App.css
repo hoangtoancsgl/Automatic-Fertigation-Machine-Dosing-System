@@ -1,0 +1,183 @@
+@import url("https://fonts.googleapis.com/css2?family=Manjari:wght@100;400&family=Roboto+Mono:wght@100&family=Roboto+Slab:wght@100;300;400;500;600;700;800&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  font-family: "Manjari", sans-serif;
+  font-weight: 800;
+  font-stretch: expanded;
+}
+.Home {
+  width: 100%;
+  height: 100vh;
+  background-image: url(assets/backgroundsignin.png);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.logo {
+  width: 40px;
+  cursor: pointer;
+  margin: 10px 0px 1px;
+}
+.universityTag {
+  color: #ffffff;
+  width: 95%;
+  height: 50%;
+  justify-content: left;
+  margin: 20px 0 3px;
+  font-size: 1;
+}
+.navbar {
+  width: 95%;
+  height: 10%;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  justify-content: left;
+}
+
+.signin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  background: white;
+  border-radius: 15px;
+}
+.signin h1 {
+  text-align: center;
+  padding: 20px 0 10px 0;
+  border-bottom: 1px solid silver;
+}
+.signin form {
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+form .txt_field {
+  position: relative;
+  border-bottom: 2px solid #adadad;
+  margin: 30px 0;
+}
+.txt_field input {
+  width: 100%;
+  padding: 0 5px;
+  height: 40px;
+  font-size: 16px;
+  border: none;
+  background: none;
+  outline: none;
+}
+.txt_field label {
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  color: #adadad;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+  transition: 0.5s;
+}
+.txt_field span::before {
+  content: " ";
+  position: absolute;
+  top: 40px;
+  left: 0;
+  height: 2px;
+  background: #2691d9;
+}
+.txt_field input:focus ~ label,
+.txt_field input:valid ~ label {
+  top: 5px;
+  color: #2691d9;
+}
+.txt_field input:focus ~ span::before,
+.txt_field input:valid ~ span::before {
+  width: 100%;
+}
+.submit {
+  width: 100%;
+  height: 50px;
+  border: 1px solid;
+  background: #2691d9;
+  border-radius: 25px;
+  font-size: 18px;
+  color: #e9f4fb;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+}
+input[type="submit"]:hover {
+  border-color: #2691d9;
+  transition: 0.5s;
+}
+.signin p {
+  padding: 8px 3px 18px 0;
+  color: #000000;
+  font-size: 13px;
+}
+.ml-2 {
+  color: #002d68;
+  border: none;
+  padding: 0px 0px 0px 3px;
+}
+
+/*-------------Home-Dashboard----------------*/
+
+/*----------------AboutPage----------------*/
+.About {
+  width: 100%;
+  height: 100vh;
+  background-image: url(assets/background.jpg);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+.About .universityTag {
+  color: #000000;
+}
+
+.navbar{
+  display: flex;
+}
+/* button {
+  color: #000000;
+  padding: 10px 25px;
+  background: transparent;
+  border: 1px solid rgb(0, 0, 0);
+  border-radius: 20px;
+  outline: none;
+  cursor: pointer;
+} */
+.content {
+  position: absolute;
+  top: 30%;
+  left: 8%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+.logintag {
+  color: #000000;
+  padding: 10px 25px;
+  background: transparent;
+  border: 1px solid rgb(0, 0, 0);
+  border-radius: 20px;
+  outline: none;
+  cursor: pointer;
+  font-size: 13px;
+  margin-right: 50px;
+}
+
+
+.type-button {
+	padding-top: 0;
+	background: transparent;
+	border: none;
+}
+
+.type-button:hover {
+	background: transparent;
+}
+/*--------------------------------------------*/

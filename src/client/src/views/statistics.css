@@ -1,0 +1,36 @@
+.chart-time-series{
+  /* resize: 1%; */
+  margin-top: 5px;
+  margin-left: 10px;
+  /* display: flex; */
+}
+
+.selecttime{
+  margin-top: 10px;
+  display: block;
+  width: 20%;
+  margin-left:80%;
+} 
+.wrapper{
+  background: #f2f2f2;
+  border-radius: 1rem;
+  margin-left: 15px;
+} 
+/* .chart{
+  background: #fff;
+} */
+
+.timeseries{
+  background: #fff;
+  margin-left: 20px;
+  padding: 0.5rem;
+  border-radius: var(--card-border-radius);
+  margin-bottom: 10px;
+}
+
+.timeseries h3{
+  font-size: 15px;
+  display: flex;
+  justify-content: center;
+  /* margin-left: 60px; */
+}

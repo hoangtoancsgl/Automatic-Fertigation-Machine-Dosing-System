@@ -1,0 +1,60 @@
+import { configReducer } from "../reducers/configReducer";
+import { createContext, useReducer } from "react";
+import {
+  url,
+  ADD_CONFIGDATA,
+  CONFIGDATA_LOADED_SUCCESS,
+  CONFIGDATA_LOADED_FAIL,
+} from "./constants";
+import axios from "axios";
+
+export const ConfigContext = createContext();
+
+const ConfigContextProvider = ({ children }) => {
+  const [configState, dispatchConfig] = useReducer(configReducer, {
+    currentConfig: [],
+  });
+  // config data
+  const config = async (newConfig) => {
+    try {
+      const response = await axios.post(`${url}/configdata`, newConfig);
+      if (response.data.success) {
+        dispatchConfig({
+          configData: ADD_CONFIGDATA,
+          payload: response.data.post,
+        });
+        return response.data;
+      }
+    } catch (error) {
+      return error.response.data
+        ? error.response.data
+        : { success: false, message: "Server error" };
+    }
+  };
+
+  //get current config
+  const getConfigData = async () => {
+    try {
+      const responce = await axios.get(`${url}/configdata`);
+      if (responce.data.success) {
+        dispatchConfig({
+          configData: CONFIGDATA_LOADED_SUCCESS,
+          payload: responce.data.getLastConfigData,
+        });
+      }
+    } catch (error) {
+      dispatchConfig({ configData: CONFIGDATA_LOADED_FAIL });
+    }
+  };
+  const configContextData = {
+    config,
+    getConfigData,
+    configState,
+  };
+  return (
+    <ConfigContext.Provider value={configContextData}>
+      {children}
+    </ConfigContext.Provider>
+  );
+};
+export default ConfigContextProvider;
