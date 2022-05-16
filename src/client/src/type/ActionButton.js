@@ -19,7 +19,7 @@ const ActionButtons = ({ _id }) => {
     updateConfigType,
   } = useContext(TypeContext);
 
-  const { config } = useContext(ConfigContext);
+  const { configManual } = useContext(ConfigContext);
 
   const { deleteConfigType, findConfigType, setShowUpdateTypeModal } =
     useContext(TypeContext);
@@ -38,7 +38,7 @@ const ActionButtons = ({ _id }) => {
     event.preventDefault();
     console.log(configtype.type, configtype.TDS);
     try {
-      const { success, message } = await config({
+      const { success, message } = await configManual({
         device: device,
         type: configtype.type,
         TDS: configtype.TDS,
@@ -54,13 +54,17 @@ const ActionButtons = ({ _id }) => {
   };
 
   return (
-    <div>
+    <div className="actionButton">
       <OverlayTrigger
         placement="left"
         overlay={<Tooltip>Choose this type for current config</Tooltip>}
       >
         <form onSubmit={onClickConf}>
-          <button type="submit" onClick={choosePostType.bind(this, _id)}>
+          <button
+            type="submit"
+            onClick={choosePostType.bind(this, _id)}
+            className="inputtype-button"
+          >
             <img src={selectButton} width="30" height="30" />
           </button>
         </form>

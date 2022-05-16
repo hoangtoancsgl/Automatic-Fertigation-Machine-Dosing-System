@@ -15,7 +15,7 @@ const ConfigContextProvider = ({ children }) => {
     currentConfig: [],
   });
   // config data
-  const config = async (newConfig) => {
+  const configManual = async (newConfig) => {
     try {
       const response = await axios.post(`${url}/configdata`, newConfig);
       if (response.data.success) {
@@ -47,7 +47,7 @@ const ConfigContextProvider = ({ children }) => {
     }
   };
   const configContextData = {
-    config,
+    configManual,
     getConfigData,
     configState,
   };

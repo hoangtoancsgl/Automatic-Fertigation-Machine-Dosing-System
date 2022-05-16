@@ -22,6 +22,7 @@
   --border-radius-2: 0.8rem;
   --border-radius-3: 1.2rem;
 
+
   --card-padding: 1.8rem;
   --padding-i: 1.2rem;
 
@@ -29,7 +30,7 @@
 }
 /* -------------  middle----------------- */
 .main {
-  background: #f9e6ff;
+  background: #e0e0d1;
   margin-top: 20px;
   margin-left: 10px;
   margin-right: 10px;
@@ -37,7 +38,7 @@
   margin-bottom: 20px;
 }
 .config {
-  padding: 30px 0px 0px 0px;
+  padding: 15px 0px 0px 0px;
 }
 .config h1 {
   font-size: 20px;
@@ -210,9 +211,9 @@ input {
   background: #fff;
   border-radius: 1rem;
   padding: 0.5rem;
-  margin-left: 30px;
-  margin-right: 30px;
-  margin-bottom: 30px;
+}
+.typeSetting{
+  font-weight: 300;
 }
 /* .singleType{
   display: flex;
@@ -242,3 +243,89 @@ input {
   margin: 1 auto;
   grid-template-columns: 13.3rem  4rem 7rem 3.5rem 6rem  5rem;
 } */ 
+
+.cirular-value{
+  display: grid  ;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 1 auto;
+  /* /grid-template-columns: 10px auto auto 10px; */
+}
+
+.TDSSetting{
+  /* display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%; */
+
+}
+
+.nutri_ratioSetting img{
+  height: 40px;
+  width: 40px;
+}
+.dead_PHSetting img{
+  height: 40px;
+  width: 40px;
+}
+.dead_TDSSetting img{
+  height: 40px;
+  width: 40px;
+}
+.TDSSetting img{
+  height: 40px;
+  width: 40px;
+}
+.PHSetting img{
+  height: 40px;
+  width: 40px;
+}
+
+
+.type-button {
+	padding-top: 0;
+	background: transparent;
+	border: none;
+  margin-right: 8px;
+}
+
+.type-button:hover {
+	background: transparent;
+}
+
+.inputtype-button{
+  margin-top: 10px;
+  padding-top: 0;
+	background: transparent;
+	border: none;
+  margin-right: 8px;
+}
+
+.optionTypePersonalGlobal{
+  display: grid  ;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.GlobalTypeBox{
+  background: 	 #99e699;
+  border-radius: 10px;
+  padding: 20px;
+}
+.PersonalTypeBox{
+  background: 	#99e699;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.personalAndButton{
+  display: flex;
+}
+.selectPersonalType{
+
+    
+    display: block;
+    width: 90%;
+    
+}
+

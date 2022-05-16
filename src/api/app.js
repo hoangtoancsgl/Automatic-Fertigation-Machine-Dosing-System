@@ -744,5 +744,3 @@ io.on("connection", (socket) => {
     removeUser(socket.id);
   });
 });
-
-

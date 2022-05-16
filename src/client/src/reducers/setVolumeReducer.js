@@ -23,21 +23,17 @@ export const setVolumeReducer = (setvolume, action) => {
     case ADD_SETVOLUME:
       return {
         ...setvolume,
-        setVolume: [...setvolume.setVolume, payload],
+        // setVolume: [...setvolume.setVolume, payload],
       };
 
     // case FIND_CONFIGTYPE:
     //   return { ...setvolume, configtype: payload };
 
-    // case UPDATE_CONFIGTYPE:
-    //   const newType = typeagr.config.map((configtype) =>
-    //     configtype._id === payload._id ? payload : configtype
-    //   );
-
-    //   return {
-    //     ...typeagr,
-    //     config: newType,
-    //   };
+    case UPDATE_SETVOLUME:
+      return {
+        ...setvolume,
+        setVolume: payload,
+      };
 
     default:
       return setvolume;

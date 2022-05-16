@@ -424,9 +424,11 @@ main .insights .TDS {
 
 
 .btn-floating {
-	position:fixed;
+	/* position:absolute;
 	left: 69%;
-	top: 90%;
+	top: 90%; */
+  
+  margin-left: 10px;
 	background: transparent;
 	border: none;
 }
@@ -452,23 +454,28 @@ main .insights .TDS {
 }
 
 .title-new-vegetable{
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 30%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
 }
 .button-new-vegetable{
   display: block;
-  margin-left: 28%;
+  margin-left: 20%;
   margin-right: auto;
-  width: 40%;
+  width: 60%;
 }
 
-.cirular-value{
+.tds-ph-nutri{
   display: grid  ;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 1 auto;
+  grid-template-columns: repeat(3, 1fr);
+  /* margin-left: 10%; */
   /* /grid-template-columns: 10px auto auto 10px; */
+}
+
+.dead-tds-ph{
+  display: grid  ;
+  grid-template-columns: repeat(2, 1fr);
+  margin-left: 40px;
 }
 
 .machine-current-state-tag{
@@ -515,3 +522,7 @@ main .insights .TDS {
  margin-bottom: 20px;
 }
 
+.actionButton{
+  display: flex;
+  justify-content: end;
+}

@@ -17,9 +17,7 @@ const PostButtonTypeModal = ({ _id }) => {
   } = useContext(TypeModalContext);
 
   const { setShowToast } = useContext(TypeContext);
-
-  console.log(_id);
-  const { config } = useContext(ConfigContext);
+  const { configManual } = useContext(ConfigContext);
   const { findConfigTypeModal } = useContext(TypeModalContext);
   const choosePostType = (configTypeId) => {
     console.log(configTypeId);
@@ -28,7 +26,7 @@ const PostButtonTypeModal = ({ _id }) => {
   const onClickConf = async (event) => {
     event.preventDefault();
     try {
-      const { success, message } = await config({
+      const { success, message } = await configManual({
         device: device,
         type: configtypemodal.typeModal,
         TDS: configtypemodal.TDSModal,
@@ -44,13 +42,17 @@ const PostButtonTypeModal = ({ _id }) => {
   };
 
   return (
-    <div>
+    <div className="actionButton">
       <OverlayTrigger
         placement="left"
         overlay={<Tooltip>Choose this type for current config</Tooltip>}
       >
         <form onSubmit={onClickConf}>
-          <button type="submit" onClick={choosePostType.bind(this, _id)}>
+          <button
+            type="submit"
+            onClick={choosePostType.bind(this, _id)}
+            className="inputtype-button"
+          >
             <img src={selectButton} width="30" height="30" />
           </button>
         </form>

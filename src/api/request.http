@@ -43,10 +43,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
 {
   "device":"58bf251706a0", 
   "Nutri_A_full":"0", 
-  "Nutri_B_full":"40", 
-  "Water_full":"20", 
-  "Acid_So_full":"30", 
-  "Base_So_full":"50" 
+  "Nutri_B_full":"0",
+  "Water_full":"0",  
+  "Acid_So_full":"0", 
+  "Base_So_full":"0" 
 }
 ###
 GET http://localhost:5000/api/setvolume

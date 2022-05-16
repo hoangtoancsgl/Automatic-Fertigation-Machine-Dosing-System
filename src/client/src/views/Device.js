@@ -5,10 +5,10 @@ import { TypeContext } from "../contexts/TypeContext";
 import { ConfigContext } from "../contexts/ConfigContext";
 import { AuthContext } from "../contexts/AuthContext";
 import { TypeModalContext } from "../contexts/TypeModalContext";
-import AlertMessage from "../components/layout/AlertMessage";
+
 import devicelogo from "../assets/device.jpg";
 import PHImage from "../assets/PH.png";
-import React from "react";
+import React, { Component } from "react";
 
 import { io } from "socket.io-client";
 import Button from "react-bootstrap/Button";
@@ -20,9 +20,12 @@ import SingleType from "../type/SingleType";
 import SingleTypeModal from "../type/SingleTypeModal";
 import AddTypeModal from "../type/AddTypeModal";
 import UpdateTypeModal from "../type/UpdateTypeModal";
+import { SetVolumeContext } from "../contexts/SetVolumeContext";
+import Switch from "react-switch";
 import Select from "react-select";
 
 import Toast from "react-bootstrap/Toast";
+
 const Device = () => {
   const {
     dataState: {
@@ -53,10 +56,28 @@ const Device = () => {
     getTypeModal,
   } = useContext(TypeModalContext);
 
+  const {
+    setVolumeState: {
+      setVolume: {
+        _id,
+        Nutri_A_full,
+        Nutri_B_full,
+        Acid_So_full,
+        Base_So_full,
+        createdAt,
+      },
+    },
+    getSetVolume,
+    addSetVolume,
+    updateVolume,
+    setVolume,
+  } = useContext(SetVolumeContext);
+
   useEffect(() => getData(), []);
   useEffect(() => getConfigData(), []);
   useEffect(() => getConfigType(), []);
   useEffect(() => getTypeModal(), []);
+  useEffect(() => getSetVolume(), []);
   // add device
 
   const { addDevices } = useContext(DataContext);
@@ -67,8 +88,6 @@ const Device = () => {
 
   const { deviceID } = newDevice;
 
-  const [alert, setAlert] = useState(null);
-
   const onChangeNewDeviceForm = (event) =>
     setNewDevice({
       ...newDevice,
@@ -78,16 +97,13 @@ const Device = () => {
   const onSubmmit = async (event) => {
     event.preventDefault();
     try {
-      const { message } = await addDevices(newDevice);
-      setAlert({ type: "danger", message: message });
-      setTimeout(() => setAlert(null), 5000);
+      const { success, message } = await addDevices(newDevice);
       setNewDevice({ deviceID: "" });
+      setShowToast({ show: true, message, Type: success ? "info" : "danger" });
     } catch (error) {
       console.log(error);
     }
   };
-
-  const [alert_conf, setAlert_conf] = useState(null);
 
   const [newConfig, newSetConfig] = useState({
     TDS: "",
@@ -98,14 +114,12 @@ const Device = () => {
   });
 
   const { newTDS, newDead_TDS, newPH, newDead_PH, newnutri_Ratio } = newConfig;
-
-  const onSubmmitConf = async (event) => {
+  const { configManual } = useContext(ConfigContext);
+  const onSubmmitConfigManual = async (event) => {
     event.preventDefault();
 
     try {
-      const { message } = await config(newConfig);
-      setAlert_conf({ type: "danger", message: message });
-      setTimeout(() => setAlert_conf(null), 5000);
+      const { success, message } = await configManual(newConfig);
       newSetConfig({
         TDS: " ",
         dead_TDS: " ",
@@ -113,6 +127,7 @@ const Device = () => {
         dead_PH: " ",
         nutri_Ratio: " ",
       });
+      setShowToast({ show: true, message, Type: success ? "info" : "danger" });
     } catch (error) {
       console.log(error);
     }
@@ -129,7 +144,8 @@ const Device = () => {
   //socket io
   const {
     authState: {
-      user: { username, _id },
+      user: { username },
+      user,
     },
   } = useContext(AuthContext);
   const socket = useRef();
@@ -144,13 +160,13 @@ const Device = () => {
   }, []);
 
   useEffect(() => {
-    socket.current.emit("addUser", _id);
+    socket.current.emit("addUser", user._id);
     socket.current.on("getUsers", (users) => {
       //sconsole.log(users);
     });
     socket.current.emit("getConfig", _id);
     socket.current.on("sendConfig", (config) => {
-      //console.log(config);
+      console.log(config);
       setData(config);
     });
   }, [username]);
@@ -203,35 +219,46 @@ const Device = () => {
   } else if (config.length === 0) {
     body1 = (
       <>
-        <h1 className="title-new-vegetable">
-          Click button below to add a new vegetables
-        </h1>
-        <Button
-          className="button-new-vegetable"
-          variant="primary"
-          onClick={setShowAddTypeModal.bind(this, true)}
-        >
-          Add new vegetables
-        </Button>
+        <div className="PersonalTypeBox">
+          <div className="title-new-vegetable">
+            Click button below to add your profile
+          </div>
+          <Button
+            className="button-new-vegetable"
+            variant="primary"
+            onClick={setShowAddTypeModal.bind(this, true)}
+          >
+            Add new vegetables
+          </Button>
+        </div>
       </>
     );
   } else {
     body1 = (
       <>
-        <Select options={options} onChange={onChangePersonal} />
-        {body12}
+        <div className="PersonalTypeBox">
+          <div className="PersonalTitle">Personal profile</div>
+          <div className="personalAndButton">
+            <Select
+              options={options}
+              onChange={onChangePersonal}
+              className="selectPersonalType"
+            />
+            <OverlayTrigger
+              placement="left"
+              overlay={<Tooltip>Add a new profile</Tooltip>}
+            >
+              <Button
+                className="btn-floating"
+                onClick={setShowAddTypeModal.bind(this, true)}
+              >
+                <img src={addButton} height="15" width="15" />
+              </Button>
+            </OverlayTrigger>
+          </div>
 
-        <OverlayTrigger
-          placement="left"
-          overlay={<Tooltip>Add a new profile</Tooltip>}
-        >
-          <Button
-            className="btn-floating"
-            onClick={setShowAddTypeModal.bind(this, true)}
-          >
-            <img src={addButton} height="20" width="20" />
-          </Button>
-        </OverlayTrigger>
+          {body12}
+        </div>
       </>
     );
   }
@@ -240,98 +267,301 @@ const Device = () => {
   if (typeModal.length !== 0) {
     bodyGlobal = (
       <>
-        <h1>Recommend profile for vegetables</h1>
-        <Select options={optionsGlobal} onChange={onChangeGlobal} />
-        {bodyTypeGlobal}
+        <div className="GlobalTypeBox">
+          <div className="globalTitle">Recommend profile</div>
+          <Select options={optionsGlobal} onChange={onChangeGlobal} />
+          {bodyTypeGlobal}
+        </div>
       </>
     );
   }
 
+  const [checked, setChecked] = useState(false);
+  let bodyConfigManual = null;
+  const onChangeChecked = () => {
+    setChecked(!checked);
+  };
+  if (checked == true) {
+    bodyConfigManual = (
+      <>
+        <form onSubmit={onSubmmitConfigManual}>
+          <div className="PH-config">
+            <div className="pH">
+              <h2>Current PH value set: {PH}</h2>
+              <input
+                type="number"
+                step="0.01"
+                className="text"
+                placeholder="Set PH value..."
+                name="PH"
+                value={newPH}
+                onChange={onChangeNewSetConfigForm}
+                required
+              />
+            </div>
+            <div className="dead_PH">
+              <h2>Current dead PH value set: {dead_PH}</h2>
+              <input
+                type="number"
+                step="0.01"
+                className="text"
+                placeholder="Dead PH value..."
+                name="dead_PH"
+                value={newDead_PH}
+                onChange={onChangeNewSetConfigForm}
+                required
+              />
+            </div>
+          </div>
+          <div className="TDS-config">
+            <div className="tDS">
+              <h2>Current TDS value set: {TDS} ppm</h2>
+              <input
+                type="number"
+                step="0.01"
+                className="text"
+                placeholder="Set TDS value..."
+                name="TDS"
+                value={newTDS}
+                onChange={onChangeNewSetConfigForm}
+                required
+              />
+            </div>
+            <div className="dead_TDS">
+              <h2>Current dead TDS value set: {dead_TDS} ppm</h2>
+              <input
+                type="number"
+                step="0.01"
+                className="text"
+                placeholder="Dead TDS value..."
+                name="dead_TDS"
+                value={newDead_TDS}
+                onChange={onChangeNewSetConfigForm}
+                required
+              />
+            </div>
+          </div>
+          {/* <img src={PHImage} /> */}
+          <div className="nutriRatio">
+            <h2>Current nutri ratio value set: {nutri_Ratio} </h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Nutri ratio value..."
+              name="nutri_Ratio"
+              value={newnutri_Ratio}
+              onChange={onChangeNewSetConfigForm}
+              required
+            />
+          </div>
+          <input type="submit" className="button" value="Submit" />
+        </form>
+      </>
+    );
+  }
+
+  const [newVolume, newSetVolume] = useState({
+    Nutri_A_full: " ",
+    Nutri_B_full: " ",
+    Acid_So_full: " ",
+    Base_So_full: " ",
+  });
+  const { newNutri_A_full, newNutri_B_full, newAcid_So_full, newBase_So_full } =
+    newVolume;
+  const onSubmmitVolumeBottles = async (event) => {
+    event.preventDefault();
+    try {
+      const { success, message } = await addSetVolume(newVolume);
+      newSetVolume({
+        Nutri_A_full: " ",
+        Nutri_B_full: " ",
+        Acid_So_full: " ",
+        Base_So_full: " ",
+      });
+      setShowToast({ show: true, message, Type: success ? "info" : "danger" });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const onChangeNewSetVolumeForm = (event) =>
+    newSetVolume({
+      ...newVolume,
+      device,
+      Water_full: "0",
+      [event.target.name]: event.target.value,
+    });
+
+  const onPutVolumeBottles = async (event) => {
+    event.preventDefault();
+    try {
+      const { success, message } = await updateVolume(newVolume);
+      newSetVolume({
+        Nutri_A_full: " ",
+        Nutri_B_full: " ",
+        Acid_So_full: " ",
+        Base_So_full: " ",
+      });
+      setShowToast({ show: true, message, Type: success ? "info" : "danger" });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const onPutNewSetVolumeForm = (event) =>
+    newSetVolume({
+      ...newVolume,
+      _id,
+      device,
+      Water_full: "0",
+      [event.target.name]: event.target.value,
+      createdAt,
+    });
+
+  let bodyVolumeBottle = null;
+  if (Nutri_A_full === null) {
+    bodyVolumeBottle = (
+      <form onSubmit={onSubmmitVolumeBottles}>
+        <div className="PH-config">
+          <div className="pH">
+            <h2>Current volume of Nutri A bottle: {Nutri_A_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Nutri A bottle..."
+              name="Nutri_A_full"
+              value={newNutri_A_full}
+              onChange={onChangeNewSetVolumeForm}
+              required
+            />
+          </div>
+          <div className="dead_PH">
+            <h2>Current volume of Nutri B bottle: {Nutri_B_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Nutri B bottle..."
+              name="Nutri_B_full"
+              value={newNutri_B_full}
+              onChange={onChangeNewSetVolumeForm}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="TDS-config">
+          <div className="tDS">
+            <h2>Current volume of Acid bottle: {Acid_So_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Acid value..."
+              name="Acid_So_full"
+              value={newAcid_So_full}
+              onChange={onChangeNewSetVolumeForm}
+              required
+            />
+          </div>
+          <div className="dead_TDS">
+            <h2>Current volume of Bazo bottle: {Base_So_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Bazo bottle..."
+              name="Base_So_full"
+              value={newBase_So_full}
+              onChange={onChangeNewSetVolumeForm}
+              required
+            />
+          </div>
+        </div>
+        <input type="submit" className="button" value="Submit" />
+      </form>
+    );
+  } else {
+    bodyVolumeBottle = (
+      <form onSubmit={onPutVolumeBottles}>
+        <div className="PH-config">
+          <div className="pH">
+            <h2>Current volume of Nutri A bottle: {Nutri_A_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Nutri A bottle..."
+              name="Nutri_A_full"
+              value={newNutri_A_full}
+              onChange={onPutNewSetVolumeForm}
+              required
+            />
+          </div>
+          <div className="dead_PH">
+            <h2>Current volume of Nutri B bottle: {Nutri_B_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Nutri B bottle..."
+              name="Nutri_B_full"
+              value={newNutri_B_full}
+              onChange={onPutNewSetVolumeForm}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="TDS-config">
+          <div className="tDS">
+            <h2>Current volume of Acid bottle: {Acid_So_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Acid value..."
+              name="Acid_So_full"
+              value={newAcid_So_full}
+              onChange={onPutNewSetVolumeForm}
+              required
+            />
+          </div>
+          <div className="dead_TDS">
+            <h2>Current volume of Bazo bottle: {Base_So_full} ml</h2>
+            <input
+              type="number"
+              step="0.01"
+              className="text"
+              placeholder="Bazo bottle..."
+              name="Base_So_full"
+              value={newBase_So_full}
+              onChange={onPutNewSetVolumeForm}
+              required
+            />
+          </div>
+        </div>
+        <input type="submit" className="button" value="Submit" />
+      </form>
+    );
+  }
   return (
     <>
       <div className="main">
         <div className="config">
           <div className="title-new-vegetable">Current setting is {type}</div>
-          {/* <h1>Config value</h1> */}
 
-          {/* <form onSubmit={onSubmmitConf}>
-            <div className="PH-config">
-              <div className="pH">
-                <h2>Current PH value set: {PH}</h2>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="text"
-                  placeholder="Set PH value..."
-                  name="PH"
-                  value={newPH}
-                  onChange={onChangeNewSetConfigForm}
-                  required
-                />
-              </div>
-              <div className="dead_PH">
-                <h2>Current dead PH value set: {dead_PH}</h2>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="text"
-                  placeholder="Dead PH value..."
-                  name="dead_PH"
-                  value={newDead_PH}
-                  onChange={onChangeNewSetConfigForm}
-                  required
-                />
-              </div>
+          <div>
+            <div className="titleGlobal-Personal">
+              Choose your config by your profile or recommend profile
             </div>
+            <div className="optionTypePersonalGlobal">
+              {body1}
+              {bodyGlobal}
+            </div>
+          </div>
 
-            <div className="TDS-config">
-              <div className="tDS">
-                <h2>Current TDS value set: {TDS} ppm</h2>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="text"
-                  placeholder="Set TDS value..."
-                  name="TDS"
-                  value={newTDS}
-                  onChange={onChangeNewSetConfigForm}
-                  required
-                />
-              </div>
-              <div className="dead_TDS">
-                <h2>Current dead TDS value set: {dead_TDS} ppm</h2>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="text"
-                  placeholder="Dead TDS value..."
-                  name="dead_TDS"
-                  value={newDead_TDS}
-                  onChange={onChangeNewSetConfigForm}
-                  required
-                />
-              </div>
-            </div>
-            {/* <img src={PHImage} /> */}
-          {/*
-            <div className="nutriRatio">
-              <h2>Current nutri ratio value set: {nutri_Ratio} </h2>
-              <input
-                type="number"
-                step="0.01"
-                className="text"
-                placeholder="Nutri ratio value..."
-                name="nutri_Ratio"
-                value={newnutri_Ratio}
-                onChange={onChangeNewSetConfigForm}
-                required
-              />
-            </div>
-            <AlertMessage info={alert_conf} className="message" />
-            <input type="submit" className="button" value="Submit" />
-          </form> */}
-          {body1}
-          {bodyGlobal}
           <>
             <AddTypeModal />
             {configtype !== null && <UpdateTypeModal />}
@@ -353,6 +583,27 @@ const Device = () => {
             </Toast>
           </>
         </div>
+
+        <>
+          <div className="configManualTitle">Config value manual</div>
+          <Switch
+            checked={checked}
+            onChange={onChangeChecked}
+            onColor="#86d3ff"
+            onHandleColor="#2693e6"
+            handleDiameter={17}
+            uncheckedIcon={false}
+            checkedIcon={false}
+            boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)"
+            activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)"
+            height={20}
+            width={35}
+            className="react-switch"
+            id="material-switch"
+          />
+          {bodyConfigManual}
+        </>
+        {bodyVolumeBottle}
       </div>
 
       <div className="addDevice">
@@ -370,7 +621,6 @@ const Device = () => {
                 onChange={onChangeNewDeviceForm}
                 required
               />
-              <AlertMessage info={alert} />
               <input type="submit" className="addButton" value="Add device  " />
             </form>
           </div>
