@@ -6,18 +6,20 @@ const setVolume = require("../models/setVolume");
 
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const getLastConfigType = await setVolume.find({ user: req.userId });
+    const getLastConfigType = await setVolume
+      .findOne({ user: req.userId })
+      .sort({ _id: -1 })
+      .limit(1);
 
     if (getLastConfigType === null) {
       res.json({
         success: true,
-        getlastconfigType: {
-          device: "",
-          Nutri_A_full: 0,
-          Nutri_B_full: 0,
-          Water_full: 0,
-          Acid_So_full: 0,
-          Base_So_full: 0,
+        getLastConfigType: {
+          Nutri_A_full: null,
+          Nutri_B_full: null,
+          Water_full: "0",
+          Acid_So_full: null,
+          Base_So_full: null,
         },
       });
     } else res.json({ success: true, getLastConfigType });

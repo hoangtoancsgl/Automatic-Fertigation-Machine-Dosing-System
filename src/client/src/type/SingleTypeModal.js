@@ -1,4 +1,9 @@
 import PostButtonTypeModal from "./PostButtonTypeModal";
+import nutriRatioImg from "../assets/nutriRatio.png";
+import deadPHImg from "../assets/PH_dead.png";
+import PHSet from "../assets/PHSet.png";
+import TDSSet from "../assets/TDS_img.png";
+import deadTDS from "../assets/TDS-deadvalue.png";
 import "../views/views.css";
 const SingleTypeModal = ({
   typeModal: {
@@ -13,14 +18,32 @@ const SingleTypeModal = ({
 }) => (
   <div className="singleType">
     <div className="value">
-      <div className="type">{typeModal}</div>
-      <div className="TDS">{TDSModal}</div>
-      <div className="dead_TDS">{dead_TDSModal}</div>
-      <div className="PH">{PHModal}</div>
-      <div className="dead_PH">{dead_PHModal}</div>
-      <div className="nutri_ratio">{nutri_RatioModal}</div>
+      <div className="typeSetting">{typeModal}</div>
+      <div className="tds-ph-nutri">
+        <div className="TDSSetting">
+          <img src={TDSSet}></img>
+          TDS: {TDSModal}
+        </div>
+        <div className="PHSetting">
+          <img src={PHSet}></img>
+          PH: {PHModal}
+        </div>
+        <div className="nutri_ratioSetting">
+          <img src={nutriRatioImg}></img>
+          Nutri Ratio: {nutri_RatioModal}
+        </div>
+      </div>
+      <div className="dead-tds-ph">
+        <div className="dead_TDSSetting">
+          <img src={deadTDS}></img>
+          dead_TDS: {dead_TDSModal}
+        </div>
+        <div className="dead_PHSetting">
+          <img src={deadPHImg}></img>
+          dead_PH: {dead_PHModal}
+        </div>
+      </div>
     </div>
-
     <PostButtonTypeModal
       _id={_id}
       type={typeModal}
@@ -29,7 +52,6 @@ const SingleTypeModal = ({
       PH={PHModal}
       dead_PH={dead_PHModal}
       nutri_Ratio={nutri_RatioModal}
-      className="actionButton"
     />
   </div>
 );

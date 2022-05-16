@@ -171,13 +171,4 @@ input[type="submit"]:hover {
 }
 
 
-.type-button {
-	padding-top: 0;
-	background: transparent;
-	border: none;
-}
-
-.type-button:hover {
-	background: transparent;
-}
 /*--------------------------------------------*/

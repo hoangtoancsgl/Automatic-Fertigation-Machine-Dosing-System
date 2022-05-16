@@ -33,7 +33,7 @@ const SetVolumeContextProvider = ({ children }) => {
       if (responce.data.success) {
         dispatchSetVolume({
           type: SETVOLUME_LOADED_SUCCESS,
-          payload: responce.data.getLastConfigType[0],
+          payload: responce.data.getLastConfigType,
         });
       }
     } catch (error) {
@@ -58,49 +58,31 @@ const SetVolumeContextProvider = ({ children }) => {
     }
   };
 
-  //   const deleteConfigType = async (configTypeId) => {
-  //     try {
-  //       const responce = await axios.delete(
-  //         `${url}/configdata/configtype/${configTypeId}`
-  //       );
-  //       if (responce.data.success)
-  //         dispatchType({ type: DELETE_CONFIGTYPE, payload: configTypeId });
-  //     } catch (error) {
-  //       console.log(error);
-  //     }
-  //   };
-
-  // const findConfigType = (configTypeId) => {
-  //   const configtype = typeState.config.find(
-  //     (configtype) => configtype._id === configTypeId
-  //   );
-  //   dispatchType({ type: FIND_CONFIGTYPE, payload: configtype });
-  // };
-
-  // const updateConfigType = async (updatedConfigType) => {
-  //   try {
-  //     const response = await axios.put(
-  //       `${url}/configdata/configtype/${updatedConfigType._id}`,
-  //       updatedConfigType
-  //     );
-  //     if (response.data.success) {
-  //       dispatchType({
-  //         type: UPDATE_CONFIGTYPE,
-  //         payload: response.data.post,
-  //       });
-  //       return response.data;
-  //     }
-  //   } catch (error) {
-  //     return error.response.data
-  //       ? error.response.data
-  //       : { success: false, message: "Server error" };
-  //   }
-  // };
+  const updateVolume = async (updatedVolume) => {
+    try {
+      const response = await axios.put(
+        `${url}/setvolume/${updatedVolume._id}`,
+        updatedVolume
+      );
+      if (response.data.success) {
+        dispatchSetVolume({
+          type: UPDATE_SETVOLUME,
+          payload: response.data.post,
+        });
+        return response.data;
+      }
+    } catch (error) {
+      return error.response.data
+        ? error.response.data
+        : { success: false, message: "Server error" };
+    }
+  };
 
   const setVolumeContextData = {
     getSetVolume,
     addSetVolume,
     setVolumeState,
+    updateVolume,
     // getConfigType,
     // showAddTypeModal,
     // setShowAddTypeModal,
