@@ -32,9 +32,11 @@ const TypeContextProvider = ({ children }) => {
   });
 
   /// get config type of Crops
-  const getConfigType = async () => {
+  const getConfigType = async (device) => {
     try {
-      const responce = await axios.get(`${url}/configdata/configtype`);
+      const responce = await axios.get(
+        `${url}/configdata/configtype/:${device}`
+      );
       if (responce.data.success) {
         dispatchType({
           type: CONFIGTYPE_LOADED_SUCCESS,

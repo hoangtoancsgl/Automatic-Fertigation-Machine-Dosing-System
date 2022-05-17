@@ -8,17 +8,12 @@ import { useContext, useEffect, useState } from "react";
 import { DataContext } from "../contexts/DataContext";
 import { ConfigContext } from "../contexts/ConfigContext";
 
-const ActionButtons = ({ _id }) => {
-  const {
-    dataState: {
-      data: { device },
-    },
-  } = useContext(DataContext);
+const ActionButtons = ({ _id, selectedDevice }) => {
   const {
     typeState: { configtype },
     updateConfigType,
   } = useContext(TypeContext);
-
+  console.log(selectedDevice);
   const { configManual } = useContext(ConfigContext);
 
   const { deleteConfigType, findConfigType, setShowUpdateTypeModal } =
@@ -39,7 +34,7 @@ const ActionButtons = ({ _id }) => {
     console.log(configtype.type, configtype.TDS);
     try {
       const { success, message } = await configManual({
-        device: device,
+        device: selectedDevice,
         type: configtype.type,
         TDS: configtype.TDS,
         dead_TDS: configtype.dead_TDS,

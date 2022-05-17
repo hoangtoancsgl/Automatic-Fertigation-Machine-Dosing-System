@@ -5,6 +5,7 @@ import { TypeContext } from "../contexts/TypeContext";
 import { ConfigContext } from "../contexts/ConfigContext";
 import { AuthContext } from "../contexts/AuthContext";
 import { TypeModalContext } from "../contexts/TypeModalContext";
+import { DeviceContext } from "../contexts/DeviceContext";
 
 import devicelogo from "../assets/device.jpg";
 import PHImage from "../assets/PH.png";
@@ -27,12 +28,12 @@ import Select from "react-select";
 import Toast from "react-bootstrap/Toast";
 
 const Device = () => {
-  const {
-    dataState: {
-      data: { device },
-    },
-    getData,
-  } = useContext(DataContext);
+  // const {
+  //   dataState: {
+  //     data: { device },
+  //   },
+  //   getData,
+  // } = useContext(DataContext);
 
   const [data, setData] = useState({ data: [] });
 
@@ -73,11 +74,40 @@ const Device = () => {
     setVolume,
   } = useContext(SetVolumeContext);
 
-  useEffect(() => getData(), []);
-  useEffect(() => getConfigData(), []);
+  /*---------------get device ----------------*/
+  const {
+    deviceState: { deviceData },
+    getDevice,
+  } = useContext(DeviceContext);
+  var optionsDevice = [];
+  for (let i = 0; i < deviceData.length; i++) {
+    let value = [];
+    value = { value: deviceData[i].device, label: `Device ${i + 1}` };
+    optionsDevice.push(value);
+  }
+  //console.log(optionsDevice);
+  const [selectDevice, setselectDevice] = useState("Device 1");
+  // //get last data
+  useEffect(() => getDevice(), []);
+
+  const OnChangeDevice = (event) => {
+    setselectDevice(event.label);
+  };
+  //console.log(selectDevice);
+  var selectedDevice;
+
+  for (let i = 0; i < deviceData.length; i++) {
+    if (selectDevice === optionsDevice[i].label) {
+      selectedDevice = deviceData[i].device;
+    }
+  }
+  // console.log(selectedDevice);
+  /*-----------------------------------------*/
+  // useEffect(() => getData(), []);
+  useEffect(() => getConfigData(selectedDevice), [selectedDevice]);
   useEffect(() => getConfigType(), []);
   useEffect(() => getTypeModal(), []);
-  useEffect(() => getSetVolume(), []);
+  useEffect(() => getSetVolume(selectedDevice), [selectedDevice]);
   // add device
 
   const { addDevices } = useContext(DataContext);
@@ -136,7 +166,7 @@ const Device = () => {
   const onChangeNewSetConfigForm = (event) =>
     newSetConfig({
       ...newConfig,
-      device,
+      device: selectedDevice,
       type: "Manual",
       [event.target.name]: event.target.value,
     });
@@ -164,14 +194,15 @@ const Device = () => {
     socket.current.on("getUsers", (users) => {
       //sconsole.log(users);
     });
-    socket.current.emit("getConfig", _id);
-    socket.current.on("sendConfig", (config) => {
-      console.log(config);
-      setData(config);
+    socket.current.emit("getConfig", user._id);
+    socket.current.on("sendConfig", (configManual) => {
+      console.log(configManual);
+      setData(configManual);
     });
   }, [username]);
 
   //initialize option for personal setting
+
   var options = [];
   for (let i = 0; i < config.length; i++) {
     let value = [];
@@ -185,7 +216,15 @@ const Device = () => {
   if (options !== null) {
     for (let i = 0; i < config.length; i++) {
       if (options[i].value === selectTypePersonalState) {
-        body12 = <SingleType config={config[i]} />;
+        console.log(selectedDevice);
+        console.log(config[i]);
+        body12 = (
+          <SingleType
+            config={
+              (config[i] = { ...config[i], selectedDevice: selectedDevice })
+            }
+          />
+        );
       }
     }
   }
@@ -204,7 +243,16 @@ const Device = () => {
   if (optionsGlobal !== null) {
     for (let i = 0; i < typeModal.length; i++) {
       if (optionsGlobal[i].value === selectTypeGlobalState) {
-        bodyTypeGlobal = <SingleTypeModal typeModal={typeModal[i]} />;
+        bodyTypeGlobal = (
+          <SingleTypeModal
+            typeModal={
+              (typeModal[i] = {
+                ...typeModal[i],
+                selectedDevice: selectedDevice,
+              })
+            }
+          />
+        );
       }
     }
   }
@@ -388,7 +436,7 @@ const Device = () => {
   const onChangeNewSetVolumeForm = (event) =>
     newSetVolume({
       ...newVolume,
-      device,
+      device: selectedDevice,
       Water_full: "0",
       [event.target.name]: event.target.value,
     });
@@ -412,7 +460,7 @@ const Device = () => {
     newSetVolume({
       ...newVolume,
       _id,
-      device,
+      selectedDevice,
       Water_full: "0",
       [event.target.name]: event.target.value,
       createdAt,
@@ -550,6 +598,12 @@ const Device = () => {
     <>
       <div className="main">
         <div className="config">
+          <Select
+            options={optionsDevice}
+            className="selecttime"
+            placeholder={<div>{selectDevice}</div>}
+            onChange={OnChangeDevice}
+          />
           <div className="title-new-vegetable">Current setting is {type}</div>
 
           <div>

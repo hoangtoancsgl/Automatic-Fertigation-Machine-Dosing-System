@@ -27,9 +27,9 @@ const SetVolumeContextProvider = ({ children }) => {
   //   });
 
   /// get config type of Crops
-  const getSetVolume = async () => {
+  const getSetVolume = async (device) => {
     try {
-      const responce = await axios.get(`${url}/setvolume`);
+      const responce = await axios.get(`${url}/setvolume/${device}`);
       if (responce.data.success) {
         dispatchSetVolume({
           type: SETVOLUME_LOADED_SUCCESS,

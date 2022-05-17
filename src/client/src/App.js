@@ -16,62 +16,65 @@ import SetVolumeContextProvider from "./contexts/SetVolumeContext";
 import Setting from "./views/Setting";
 import ConfigContextProvider from "./contexts/ConfigContext";
 import TypeModalContextProvider from "./contexts/TypeModalContext";
+import DeviceContextProvider from "./contexts/DeviceContext";
 function App() {
   return (
     <AuthContextProvider>
-      <DataContextProvider>
-        <ConfigContextProvider>
-          <TypeContextProvider>
-            <StatusContextProvider>
-              <TotalVolumeContextProvider>
-                <SetVolumeContextProvider>
-                  <TypeModalContextProvider>
-                    <Router>
-                      <Switch>
-                        <Route exact path="/" component={About} />
-                        <Route
-                          exact
-                          path="/login"
-                          render={(props) => (
-                            <Auth {...props} authRoute="login" />
-                          )}
-                        />
-                        <Route
-                          exact
-                          path="/register"
-                          render={(props) => (
-                            <Auth {...props} authRoute="register" />
-                          )}
-                        />
-                        <ProtectedRoute
-                          exact
-                          path="/dashboard"
-                          component={Dashboard}
-                        />
-                        <ProtectedRoute
-                          exact
-                          path="/setting"
-                          component={Setting}
-                        />
-                        <ProtectedRoute
-                          exact
-                          path="/device"
-                          component={Device}
-                        />
-                        <ProtectedRoute
-                          exact
-                          path="/statistics"
-                          component={Statistics}
-                        />
-                      </Switch>
-                    </Router>
-                  </TypeModalContextProvider>
-                </SetVolumeContextProvider>
-              </TotalVolumeContextProvider>
-            </StatusContextProvider>
-          </TypeContextProvider>
-        </ConfigContextProvider>
-      </DataContextProvider>
+      <DeviceContextProvider>
+        <DataContextProvider>
+          <ConfigContextProvider>
+            <TypeContextProvider>
+              <StatusContextProvider>
+                <TotalVolumeContextProvider>
+                  <SetVolumeContextProvider>
+                    <TypeModalContextProvider>
+                      <Router>
+                        <Switch>
+                          <Route exact path="/" component={About} />
+                          <Route
+                            exact
+                            path="/login"
+                            render={(props) => (
+                              <Auth {...props} authRoute="login" />
+                            )}
+                          />
+                          <Route
+                            exact
+                            path="/register"
+                            render={(props) => (
+                              <Auth {...props} authRoute="register" />
+                            )}
+                          />
+                          <ProtectedRoute
+                            exact
+                            path="/dashboard"
+                            component={Dashboard}
+                          />
+                          <ProtectedRoute
+                            exact
+                            path="/setting"
+                            component={Setting}
+                          />
+                          <ProtectedRoute
+                            exact
+                            path="/device"
+                            component={Device}
+                          />
+                          <ProtectedRoute
+                            exact
+                            path="/statistics"
+                            component={Statistics}
+                          />
+                        </Switch>
+                      </Router>
+                    </TypeModalContextProvider>
+                  </SetVolumeContextProvider>
+                </TotalVolumeContextProvider>
+              </StatusContextProvider>
+            </TypeContextProvider>
+          </ConfigContextProvider>
+        </DataContextProvider>
+      </DeviceContextProvider>
     </AuthContextProvider>
   );
 }

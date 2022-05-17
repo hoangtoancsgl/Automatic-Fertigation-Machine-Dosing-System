@@ -17,9 +17,9 @@ const TotalVolumeContextProvider = ({ children }) => {
     }
   );
   /// get status of device
-  const getTotalVolume = async () => {
+  const getTotalVolume = async (device) => {
     try {
-      const responce = await axios.get(`${url}/totalvolume`);
+      const responce = await axios.get(`${url}/totalvolume/${device}`);
       if (responce.data.success) {
         dispatchTotalVolume({
           type: TOTALVOLUME_LOADED_SUCCESS,

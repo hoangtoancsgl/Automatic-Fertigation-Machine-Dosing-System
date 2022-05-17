@@ -33,9 +33,9 @@ const ConfigContextProvider = ({ children }) => {
   };
 
   //get current config
-  const getConfigData = async () => {
+  const getConfigData = async (device) => {
     try {
-      const responce = await axios.get(`${url}/configdata`);
+      const responce = await axios.get(`${url}/configdata/${device}`);
       if (responce.data.success) {
         dispatchConfig({
           configData: CONFIGDATA_LOADED_SUCCESS,

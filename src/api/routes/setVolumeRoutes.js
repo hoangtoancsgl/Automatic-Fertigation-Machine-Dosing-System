@@ -4,10 +4,10 @@ const verifyToken = require("../middleware/auth");
 
 const setVolume = require("../models/setVolume");
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getLastConfigType = await setVolume
-      .findOne({ user: req.userId })
+      .findOne({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1);
 

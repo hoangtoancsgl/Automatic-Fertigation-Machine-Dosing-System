@@ -9,10 +9,8 @@ const devices = require("../models/devices");
 // @access private
 router.get("/", verifyToken, async (req, res) => {
   try {
-    const getalldata = await data
-      .findOne({ user: req.userId })
-      .sort({ _id: -1 })
-      .limit(1);
+    const getalldata = await devices.find({ user: req.userId });
+
     res.json({ success: true, getalldata });
   } catch (error) {
     console.log(error);

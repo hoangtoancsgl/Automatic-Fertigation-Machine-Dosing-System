@@ -475,7 +475,7 @@ main .insights .TDS {
 .dead-tds-ph{
   display: grid  ;
   grid-template-columns: repeat(2, 1fr);
-  margin-left: 40px;
+ 
 }
 
 .machine-current-state-tag{
@@ -525,4 +525,44 @@ main .insights .TDS {
 .actionButton{
   display: flex;
   justify-content: end;
+}
+
+.TDSSetting img{
+  margin: 0 auto;
+}
+
+.TDS_title{
+  text-align:center;
+}
+
+.PHSetting img{
+  margin: 0 auto;
+}
+
+.PH_title{
+  text-align:center;
+}
+
+.nutri_ratioSetting img{
+  margin: 0 auto;
+}
+
+.nutri_ratio_title{
+  text-align:center;
+}
+
+.dead_TDSSetting img{
+  margin: 0 auto;
+}
+
+.dead_TDS_title{
+  text-align:center;
+}
+
+.dead_PHSetting img{
+  margin: 0 auto;
+}
+
+.dead_PH_title{
+  text-align:center;
 }

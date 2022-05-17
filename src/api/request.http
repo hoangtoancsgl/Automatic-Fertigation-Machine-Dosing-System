@@ -8,6 +8,20 @@ Content-Type: application/json
 }
 
 ###
+
+GET http://localhost:5000/api/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+Content-Type: application/json
+{
+  "device":"083af2529f4c"
+}
+
+###
+
+GET http://localhost:5000/api/setvolume/083af2529f4c
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTI3NDk5NjR9.6AXrXmL-6OFgSRQx5JH-D9qEgL6W5RYZYK4Aw3qLe4E
+
+###
 //login
 POST http://localhost:5000/api/auth/login
 Content-Type: application/json
@@ -41,12 +55,12 @@ Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
 
 {
-  "device":"58bf251706a0", 
-  "Nutri_A_full":"0", 
-  "Nutri_B_full":"0",
+  "device":"083af2529f4c", 
+  "Nutri_A_full":"100", 
+  "Nutri_B_full":"130",
   "Water_full":"0",  
-  "Acid_So_full":"0", 
-  "Base_So_full":"0" 
+  "Acid_So_full":"500", 
+  "Base_So_full":"400" 
 }
 ###
 GET http://localhost:5000/api/setvolume
@@ -69,6 +83,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
 
 ###
 GET http://localhost:5000/api/typemodal
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+
+###
+GET http://localhost:5000/api/configdata/083af2529f4c
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
 
 ###
@@ -159,8 +177,8 @@ GET http://localhost:5000/api/configdata/configtype
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc0ODM1MDl9.5qPK13k8LMnOvHGECBfoMnQaK2Pka-mPiggZzQvRSdI
 
 ###
-GET http://localhost:5000/api/configdata
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc0ODM1MDl9.5qPK13k8LMnOvHGECBfoMnQaK2Pka-mPiggZzQvRSdI
+GET http://localhost:5000/api/device
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTI3NDk5NjR9.6AXrXmL-6OFgSRQx5JH-D9qEgL6W5RYZYK4Aw3qLe4E
 
 
 //update config type
@@ -206,7 +224,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
 
 //get last state
 ###
-GET http://localhost:5000/api/data/chart
+GET http://localhost:5000/api/device
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NDc2NDk1OTl9.WT2HxyMEkcigje1G-km-iOeRgiNXy4cS90CbJbaSpkM
 
 

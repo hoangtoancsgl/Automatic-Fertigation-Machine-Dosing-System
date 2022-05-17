@@ -4,7 +4,8 @@ import axios from "axios";
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
 import { url } from "../contexts/constants";
-import { useState } from "react";
+import { useState, useContext, useEffect } from "react";
+import { DeviceContext } from "../contexts/DeviceContext";
 
 const Statistics = () => {
   const arrayTemp = [];
@@ -15,17 +16,49 @@ const Statistics = () => {
   let seriesTDS = [];
   let seriesPH = [];
 
+  const {
+    deviceState: { deviceData },
+    getDevice,
+  } = useContext(DeviceContext);
+
+  var optionsDevice = [];
+  for (let i = 0; i < deviceData.length; i++) {
+    let value = [];
+    value = { value: deviceData[i].device, label: `Device ${i + 1}` };
+    optionsDevice.push(value);
+  }
+  console.log(optionsDevice);
+  const [selectDevice, setselectDevice] = useState("Device 1");
+
+  // //get last data
+  useEffect(() => getDevice(), []);
+
+  const OnChangeDevice = (event) => {
+    setselectDevice(event.label);
+  };
+  console.log(selectDevice);
+  var selectedDevice;
+
+  for (let i = 0; i < deviceData.length; i++) {
+    if (selectDevice === optionsDevice[i].label) {
+      selectedDevice = deviceData[i].device;
+    }
+  }
+
   const [time, setTime] = useState("1");
   if (time === "1") {
     fetchChartData(48);
+    //window.dispatchEvent(new Event("resize"));
   } else if (time === "2") {
     fetchChartData(336);
+    //window.dispatchEvent(new Event("resize"));
   } else if (time === "3") {
     fetchChartData(1440);
+    // window.dispatchEvent(new Event("resize"));
   }
   function fetchChartData(length) {
     axios
-      .get(`${url}/data/chart`)
+      .get(`${url}/data/chart/${selectedDevice}`)
       .then((response) => {
         const data = response.data;
 
@@ -144,6 +177,12 @@ const Statistics = () => {
   return (
     <>
       <div id="wrapper" className="wrapper">
+        <Select
+          options={optionsDevice}
+          className="selecttime"
+          placeholder={<div>{selectDevice}</div>}
+          onChange={OnChangeDevice}
+        />
         <Select
           options={options}
           className="selecttime"

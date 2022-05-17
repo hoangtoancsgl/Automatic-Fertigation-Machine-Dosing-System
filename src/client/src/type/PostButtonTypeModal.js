@@ -6,16 +6,11 @@ import { useContext } from "react";
 import { DataContext } from "../contexts/DataContext";
 import { ConfigContext } from "../contexts/ConfigContext";
 import { TypeModalContext } from "../contexts/TypeModalContext";
-const PostButtonTypeModal = ({ _id }) => {
-  const {
-    dataState: {
-      data: { device },
-    },
-  } = useContext(DataContext);
+const PostButtonTypeModal = ({ _id, selectedDevice }) => {
   const {
     typeModalState: { configtypemodal },
   } = useContext(TypeModalContext);
-
+  console.log(selectedDevice);
   const { setShowToast } = useContext(TypeContext);
   const { configManual } = useContext(ConfigContext);
   const { findConfigTypeModal } = useContext(TypeModalContext);
@@ -27,7 +22,7 @@ const PostButtonTypeModal = ({ _id }) => {
     event.preventDefault();
     try {
       const { success, message } = await configManual({
-        device: device,
+        device: selectedDevice,
         type: configtypemodal.typeModal,
         TDS: configtypemodal.TDSModal,
         dead_TDS: configtypemodal.dead_TDSModal,

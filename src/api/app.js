@@ -601,7 +601,7 @@ client.on("message", (topic, payload) => {
 
 const io = require("socket.io")(5200, {
   cors: {
-    origin: process.env.BACKEND_URL,
+    origin: "http://localhost:3000",
   },
 });
 
@@ -647,7 +647,7 @@ io.on("connection", (socket) => {
         changeStream = dbo.collection("datas").watch();
         changeStream.on("change", (change) => {
           if (change.operationType) {
-            // console.log(change.fullDocument.user._id.toString());
+            console.log(change.fullDocument.user._id.toString());
             if (change.fullDocument.user._id.toString() === userId) {
               const data1 = {
                 _id: change.fullDocument._id,

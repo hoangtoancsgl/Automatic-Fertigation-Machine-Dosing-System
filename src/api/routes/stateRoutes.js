@@ -8,10 +8,10 @@ const data = require("../models/data");
 // @Get the last data
 // @access private
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getState = await state
-      .findOne({ user: req.userId })
+      .findOne({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1);
     if (getState === null) {

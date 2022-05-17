@@ -4,13 +4,25 @@ const verifyToken = require("../middleware/auth");
 
 const totalvolume = require("../models/totalvolume");
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getalldata = await totalvolume
-      .findOne({ user: req.userId })
+      .findOne({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1);
-    res.json({ success: true, getalldata });
+
+    if (getalldata === null) {
+      res.json({
+        success: true,
+        getalldata: {
+          Nutri_A: null,
+          Nutri_B: null,
+          Water: "0",
+          Acid_So: null,
+          Base_So: null,
+        },
+      });
+    } else res.json({ success: true, getalldata });
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Internal server error" });

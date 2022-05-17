@@ -10,9 +10,9 @@ const StatusContextProvider = ({ children }) => {
     statusLoading: true,
   });
   /// get status of device
-  const getStatus = async () => {
+  const getStatus = async (device) => {
     try {
-      const responce = await axios.get(`${url}/state`);
+      const responce = await axios.get(`${url}/state/${device}`);
       if (responce.data.success) {
         dispatchStatus({
           type: STATUS_LOADED_SUCCESS,

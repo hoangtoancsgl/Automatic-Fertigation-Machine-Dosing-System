@@ -19,17 +19,10 @@ const DataContextProvider = ({ children }) => {
     dataLoading: true,
   });
 
-  // const [showAddTypeModal, setShowAddTypeModal] = useState(false);
-  // const [showUpdateTypeModal, setShowUpdateTypeModal] = useState(false);
-  // const [showToast, setShowToast] = useState({
-  //   show: false,
-  //   message: "",
-  //   type: null,
-  // });
   //get data
-  const getData = async () => {
+  const getData = async (device) => {
     try {
-      const responce = await axios.get(`${url}/data`);
+      const responce = await axios.get(`${url}/data/${device}`);
       if (responce.data.success) {
         dispatch({
           type: DATA_LOADED_SUCCESS,
@@ -55,26 +48,8 @@ const DataContextProvider = ({ children }) => {
     }
   };
 
-  const addDevices = async (newDevice) => {
-    try {
-      const response = await axios.post(`${url}/device`, newDevice);
-      if (response.data.success) {
-        dispatch({
-          type: ADD_DEVICE,
-          payload: response.data.post,
-        });
-        return response.data;
-      }
-    } catch (error) {
-      return error.response.data
-        ? error.response.data
-        : { success: false, message: "Server error" };
-    }
-  };
-
   const dataContextData = {
     dataState,
-    addDevices,
     getData,
     getChartData,
   };

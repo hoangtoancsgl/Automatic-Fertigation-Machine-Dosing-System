@@ -8,10 +8,11 @@ const data = require("../models/data");
 // @route GET api/data
 // @Get the last data
 // @access private
-router.get("/", verifyToken, async (req, res) => {
+
+router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getalldata = await data
-      .findOne({ user: req.userId })
+      .findOne({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1);
     if (getalldata === null) {
@@ -34,10 +35,10 @@ router.get("/", verifyToken, async (req, res) => {
 // @route GET api/chart
 // @Get last 5 datas
 // @access private
-router.get("/chart", verifyToken, async (req, res) => {
+router.get("/chart/:device", verifyToken, async (req, res) => {
   try {
     const getalldata = await data
-      .find({ user: req.userId })
+      .find({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1440);
     if (getalldata === null) {

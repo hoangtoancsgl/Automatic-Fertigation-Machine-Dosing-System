@@ -8,10 +8,10 @@ const configType = require("../models/configType");
 // @Get the last data
 // @access private
 
-router.get("/", verifyToken, async (req, res) => {
+router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getLastConfigData = await configData
-      .findOne({ user: req.userId })
+      .findOne({ user: req.userId, device: req.params.device })
       .sort({ _id: -1 })
       .limit(1);
     if (getLastConfigData === null) {
@@ -65,9 +65,12 @@ router.post("/", verifyToken, async (req, res) => {
 // @Get the last data
 // @access private
 
-router.get("/configtype", verifyToken, async (req, res) => {
+router.get("/configtype/:device", verifyToken, async (req, res) => {
   try {
-    const getLastConfigType = await configType.find({ user: req.userId });
+    const getLastConfigType = await configType.find({
+      user: req.userId,
+      device: req.params.device,
+    });
 
     if (getLastConfigType === null) {
       res.json({

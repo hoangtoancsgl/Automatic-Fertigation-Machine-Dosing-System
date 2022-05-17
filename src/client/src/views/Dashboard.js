@@ -6,6 +6,7 @@ import { DataContext } from "../contexts/DataContext";
 import { StatusContext } from "../contexts/StatusContext";
 import { TotalVolumeContext } from "../contexts/TotalVolumeContext";
 import { SetVolumeContext } from "../contexts/SetVolumeContext";
+import { DeviceContext } from "../contexts/DeviceContext";
 import "./views.css";
 import dosingmachine from "../assets/dosingmachine.png";
 import { io } from "socket.io-client";
@@ -16,7 +17,7 @@ import tdsIcon from "../assets/tds.png";
 
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-
+import Select from "react-select";
 const Dashboard = () => {
   //get username
   const {
@@ -24,6 +25,11 @@ const Dashboard = () => {
       user: { username, _id },
     },
   } = useContext(AuthContext);
+
+  const {
+    deviceState: { deviceData },
+    getDevice,
+  } = useContext(DeviceContext);
 
   const [data, setData] = useState({ data: [] });
   const {
@@ -57,12 +63,33 @@ const Dashboard = () => {
     getTotalVolume,
   } = useContext(TotalVolumeContext);
 
+  var optionsDevice = [];
+  for (let i = 0; i < deviceData.length; i++) {
+    let value = [];
+    value = { value: deviceData[i].device, label: `Device ${i + 1}` };
+    optionsDevice.push(value);
+  }
+  console.log(optionsDevice);
+  const [selectDevice, setselectDevice] = useState("Device 1");
   // //get last data
-  useEffect(() => getData(), [data]);
-  useEffect(() => getStatus(), [state]);
-  useEffect(() => getTotalVolume(), []);
-  useEffect(() => getSetVolume(), []);
+  useEffect(() => getDevice(), []);
 
+  const OnChangeDevice = (event) => {
+    setselectDevice(event.label);
+  };
+  console.log(selectDevice);
+  var selectedDevice;
+
+  for (let i = 0; i < deviceData.length; i++) {
+    if (selectDevice === optionsDevice[i].label) {
+      selectedDevice = deviceData[i].device;
+      //console.log(selectedDevice);
+    }
+  }
+  useEffect(() => getData(selectedDevice), [selectedDevice]);
+  useEffect(() => getStatus(selectedDevice), [selectedDevice]);
+  useEffect(() => getTotalVolume(selectedDevice), [selectedDevice]);
+  useEffect(() => getSetVolume(selectedDevice), [selectedDevice]);
   const socket = useRef();
 
   useEffect(() => {
@@ -99,21 +126,45 @@ const Dashboard = () => {
   var nutriA = Nutri_A_full - Nutri_A;
   var rounded;
   function getPercent(value_full, value) {
-    var num = ((value_full - value) / value_full) * 100;
+    var num = 0;
+    if (value_full - value < 0) {
+      num = 0;
+    } else {
+      num = ((value_full - value) / value_full) * 100;
+    }
     var roundedString = num.toFixed(0);
     rounded = Number(roundedString);
     return rounded;
   }
+
   const Nutri_A_percent = getPercent(Nutri_A_full, Nutri_A);
   const Nutri_B_percent = getPercent(Nutri_B_full, Nutri_B);
   const Acid_percent = getPercent(Acid_So_full, Acid_So);
   const Base_percent = getPercent(Base_So_full, Base_So);
+  var Nutri_A_left = Nutri_A_full - Nutri_A;
+  var Nutri_B_left = Nutri_B_full - Nutri_B;
+  var Acid_left = Acid_So_full - Acid_So;
+  var Base_left = Base_So_full - Base_So;
+  if (Nutri_A_left < 0) Nutri_A_left = 0;
+  if (Nutri_B_left < 0) Nutri_B_left = 0;
+  if (Base_left < 0) Base_left = 0;
+  if (Acid_left < 0) Acid_left = 0;
 
+  // } else Nutri_A_left = Nutri_A_full - Nutri_A;
+  // if (Nutri_B_left < 0) Nutri_B_left = 0;
+  // if (Acid_left < 0) Acid_left = 0;
+  // if (Base_left < 0) Base_left = 0;
   // console.log(Nutri_A_percent);
   return (
     <>
       <main>
         <small className="text-mute">Last Time Update: {createdAt}</small>
+        <Select
+          options={optionsDevice}
+          className="selecttime"
+          placeholder={<div>{selectDevice}</div>}
+          onChange={OnChangeDevice}
+        />
         <h1 className="machine-current-state-tag">
           Current value at dosing machine
         </h1>
@@ -156,7 +207,7 @@ const Dashboard = () => {
           <div className="circular">
             <CircularProgressbar
               className="Nutri_A-cir"
-              value={Nutri_A_full - Nutri_A}
+              value={Nutri_A_left}
               maxValue={Nutri_A_full}
               text={`${Nutri_A_percent}%`}
               styles={buildStyles({
@@ -166,35 +217,33 @@ const Dashboard = () => {
 
                 pathColor: `#009933`,
 
-                trailColor: "#d6d6d6",
+                // trailColor: `#d6d6d6`,
                 backgroundColor: "#3e98c7",
               })}
             />
             <h1>
               Nutri A:&nbsp;
-              <bdo className="valueTag">{Nutri_A_full - Nutri_A}</bdo>{" "}
-              &nbsp;(ml)
+              <bdo className="valueTag">{Nutri_A_left}</bdo> &nbsp;(ml)
             </h1>
           </div>
 
           <div className="circular">
             <CircularProgressbar
               className="Nutri_B-cir"
-              value={Nutri_B_full - Nutri_B}
+              value={Nutri_B_left}
               maxValue={Nutri_B_full}
               text={`${Nutri_B_percent}%`}
             />
             <h1>
               Nutri B:&nbsp;
-              <bdo className="valueTag">{Nutri_B_full - Nutri_B}</bdo>{" "}
-              &nbsp;(ml)
+              <bdo className="valueTag">{Nutri_B_left}</bdo> &nbsp;(ml)
             </h1>
           </div>
 
           <div className="circular">
             <CircularProgressbar
               className="Acid-cir"
-              value={Acid_So_full - Acid_So}
+              value={Acid_left}
               maxValue={Acid_So_full}
               text={`${Acid_percent}%`}
               styles={buildStyles({
@@ -205,15 +254,14 @@ const Dashboard = () => {
             />
             <h1>
               Acid:&nbsp;
-              <bdo className="valueTag">{Acid_So_full - Acid_So}</bdo>{" "}
-              &nbsp;(ml)
+              <bdo className="valueTag">{Acid_left}</bdo> &nbsp;(ml)
             </h1>
           </div>
 
           <div className="circular">
             <CircularProgressbar
               className="Base-cir"
-              value={Base_So_full - Base_So}
+              value={Base_left}
               maxValue={Base_So_full}
               text={`${Base_percent}%`}
               styles={buildStyles({
@@ -224,8 +272,7 @@ const Dashboard = () => {
             />
             <h1>
               Base:&nbsp;
-              <bdo className="valueTag">{Base_So_full - Base_So}</bdo>{" "}
-              &nbsp;(ml)
+              <bdo className="valueTag">{Base_left}</bdo> &nbsp;(ml)
             </h1>
           </div>
         </div>
@@ -268,6 +315,7 @@ const Dashboard = () => {
           </div>
           <div className="userDevice">
             <div>My Devices</div>
+
             <div className="devices">
               <div className="dosingmachine">
                 <img src={dosingmachine} className="icon-device" />
