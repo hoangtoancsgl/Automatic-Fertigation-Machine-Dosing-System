@@ -41,6 +41,7 @@ const UpdateTypeModal = () => {
       <Form onSubmit={onSubmit}>
         <Modal.Body>
           <Form.Group className="addType">
+            <div>Type</div>
             <Form.Control
               type="text"
               placeholder="Type"
@@ -55,6 +56,7 @@ const UpdateTypeModal = () => {
             </Form.Text>
           </Form.Group>
           <Form.Group className="addType">
+            <div>TDS value</div>
             <Form.Control
               type="number"
               step="0.01"
@@ -65,16 +67,18 @@ const UpdateTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>TDS threshold value</div>
             <Form.Control
               type="number"
               step="0.01"
-              placeholder="TDS dead value"
+              placeholder="TDS threshold value"
               name="dead_TDS"
               value={dead_TDS}
               onChange={onChangeUpdatedTypeForm}
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>PH value</div>
             <Form.Control
               type="number"
               step="0.01"
@@ -85,16 +89,18 @@ const UpdateTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>PH threshold value</div>
             <Form.Control
               type="number"
               step="0.01"
-              placeholder="PH dead value"
+              placeholder="PH threshold value"
               name="dead_PH"
               value={dead_PH}
               onChange={onChangeUpdatedTypeForm}
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>Nutri ratio value</div>
             <Form.Control
               type="number"
               step="0.01"

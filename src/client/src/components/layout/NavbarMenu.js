@@ -108,7 +108,7 @@ const NavbarMenu = () => {
             <h3>Chart</h3>
           </a>
 
-          <a href="../setting">
+          {/* <a href="../setting">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -137,7 +137,7 @@ const NavbarMenu = () => {
             </svg>
             <h3>Warning</h3>
             <span className="warningCount">26</span>
-          </a>
+          </a> */}
 
           <a href="../">
             <svg

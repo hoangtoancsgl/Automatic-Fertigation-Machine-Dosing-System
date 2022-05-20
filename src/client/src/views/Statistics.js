@@ -4,22 +4,90 @@ import axios from "axios";
 import ReactApexChart from "react-apexcharts";
 import Select from "react-select";
 import { url } from "../contexts/constants";
-import { useState, useContext, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { DeviceContext } from "../contexts/DeviceContext";
 
 const Statistics = () => {
-  const arrayTemp = [];
-  const arrayTDS = [];
-  const arrayPH = [];
-  const arrayTime = [];
-  let seriesTemp = [];
-  let seriesTDS = [];
-  let seriesPH = [];
-
+  const [selectedDevice, setSelectedDevice] = useState("Device 1");
+  const [labelDevice, setLabelDevice] = useState("Device 1");
   const {
     deviceState: { deviceData },
     getDevice,
   } = useContext(DeviceContext);
+  // //get last data
+
+  const [chartData, setChartData] = useState({
+    seriesTemperature: [
+      {
+        name: "Temperature",
+        data: [],
+      },
+    ],
+    optionsTemperature: {
+      chart: {
+        id: "area",
+        group: "temp",
+        type: "area",
+      },
+      colors: ["#00E396"],
+      xaxis: {
+        type: "datetime",
+        categories: [],
+      },
+      noData: {
+        text: "Loading...",
+      },
+    },
+    seriesPHChart: [
+      {
+        name: "PH",
+        data: [],
+      },
+    ],
+    optionsPhChart: {
+      chart: {
+        id: "ig",
+        group: "ph",
+        type: "area",
+      },
+      colors: ["#008FFB"],
+      xaxis: {
+        type: "datetime",
+        categories: [],
+        tickAmount: 6,
+      },
+      noData: {
+        text: "Loading...",
+      },
+    },
+
+    seriesTDSChart: [
+      {
+        name: "TDS",
+        data: [],
+      },
+    ],
+    optionsTDSChart: {
+      chart: {
+        id: "li",
+        group: "tds",
+        type: "area",
+      },
+      colors: ["#b37700"],
+      xaxis: {
+        type: "datetime",
+        categories: [],
+        tickAmount: 6,
+      },
+      noData: {
+        text: "Loading...",
+      },
+    },
+  });
+
+  useEffect(() => {
+    getDevice();
+  }, []);
 
   var optionsDevice = [];
   for (let i = 0; i < deviceData.length; i++) {
@@ -27,146 +95,156 @@ const Statistics = () => {
     value = { value: deviceData[i].device, label: `Device ${i + 1}` };
     optionsDevice.push(value);
   }
-  console.log(optionsDevice);
-  const [selectDevice, setselectDevice] = useState("Device 1");
-
-  // //get last data
-  useEffect(() => getDevice(), []);
-
-  const OnChangeDevice = (event) => {
-    setselectDevice(event.label);
-  };
-  console.log(selectDevice);
-  var selectedDevice;
 
   for (let i = 0; i < deviceData.length; i++) {
-    if (selectDevice === optionsDevice[i].label) {
-      selectedDevice = deviceData[i].device;
+    if (selectedDevice === optionsDevice[i].label) {
+      setSelectedDevice(deviceData[i].device);
     }
   }
+  console.log(selectedDevice);
+  const OnChangeDevice = (event) => {
+    setSelectedDevice(event.label);
+  };
 
   const [time, setTime] = useState("1");
-  if (time === "1") {
-    fetchChartData(48);
-    //window.dispatchEvent(new Event("resize"));
-  } else if (time === "2") {
-    fetchChartData(336);
-    //window.dispatchEvent(new Event("resize"));
-  } else if (time === "3") {
-    fetchChartData(1440);
-    // window.dispatchEvent(new Event("resize"));
-  }
-  function fetchChartData(length) {
+
+  function fetchChartData(device, length) {
     axios
-      .get(`${url}/data/chart/${selectedDevice}`)
+      .get(`${url}/data/chart/${device}/${length}`)
       .then((response) => {
         const data = response.data;
-
-        for (let j = 0; j < length; j++) {
-          var date = new Date(data.getalldata[j].createdAt);
-          arrayTime.push(date.getTime());
-          arrayTemp.push(data.getalldata[j].temperature * 1);
-          arrayTDS.push(data.getalldata[j].TDS * 1);
-          arrayPH.push(data.getalldata[j].PH * 1);
+        if (data.getalldata[0].length !== 0) {
+          setChartData({
+            seriesTemperature: [
+              {
+                name: "Temperature",
+                data: data.getalldata[0],
+              },
+            ],
+            optionsTemperature: {
+              chart: {
+                id: "area",
+                group: "temp",
+                type: "area",
+              },
+              colors: ["#00E396"],
+              xaxis: {
+                type: "datetime",
+                categories: data.getalldata[3],
+              },
+            },
+            seriesPHChart: [
+              {
+                name: "PH",
+                data: data.getalldata[2],
+              },
+            ],
+            optionsPhChart: {
+              chart: {
+                id: "ig",
+                group: "ph",
+                type: "area",
+              },
+              colors: ["#008FFB"],
+              xaxis: {
+                type: "datetime",
+                categories: data.getalldata[3],
+              },
+            },
+            seriesTDSChart: [
+              {
+                name: "TDS",
+                data: data.getalldata[1],
+              },
+            ],
+            optionsTDSChart: {
+              chart: {
+                id: "li",
+                group: "tds",
+                type: "area",
+              },
+              colors: ["#b37700"],
+              xaxis: {
+                type: "datetime",
+                categories: data.getalldata[3],
+              },
+            },
+          });
+        } else {
+          setChartData({
+            seriesTemperature: [
+              {
+                name: "Temperature",
+                data: [],
+              },
+            ],
+            optionsTemperature: {
+              chart: {
+                id: "area",
+                group: "temp",
+                type: "area",
+              },
+              colors: ["#00E396"],
+              xaxis: {
+                type: "datetime",
+                categories: [],
+              },
+            },
+            seriesPHChart: [
+              {
+                name: "PH",
+                data: [],
+              },
+            ],
+            optionsPhChart: {
+              chart: {
+                id: "ig",
+                group: "ph",
+                type: "area",
+              },
+              colors: ["#008FFB"],
+              xaxis: {
+                type: "datetime",
+                categories: [],
+              },
+            },
+            seriesTDSChart: [
+              {
+                name: "TDS",
+                data: [],
+              },
+            ],
+            optionsTDSChart: {
+              chart: {
+                id: "li",
+                group: "tds",
+                type: "area",
+              },
+              colors: ["#b37700"],
+              xaxis: {
+                type: "datetime",
+                categories: [],
+              },
+            },
+          });
         }
-        var values = [arrayTemp, arrayTDS, arrayPH, arrayTime];
-        var i = 0;
-        while (i < length) {
-          seriesTemp.push([values[3][i], values[0][i]]);
-          seriesTDS.push([values[3][i], values[1][i]]);
-          seriesPH.push([values[3][i], values[2][i]]);
-          i++;
-        }
-        window.dispatchEvent(new Event("resize"));
       })
-      .catch(() => {
+      .catch((e) => {
         console.log("Error retrieving data!!!");
       });
   }
 
-  const seriesArea = [
-    {
-      name: "Temperature",
-      data: seriesTemp,
-    },
-  ];
-  const optionsArea = {
-    chart: {
-      id: "area",
-      group: "social",
-      type: "area",
-    },
-    colors: ["#00E396"],
-    xaxis: {
-      type: "datetime",
-      min: arrayTime[0],
-    },
-    zoom: {
-      type: "x",
-      enabled: true,
-      autoScaleYaxis: true,
-    },
-    toolbar: {
-      autoSelected: "zoom",
-    },
-  };
+  useEffect(() => {
+    if (time === "1") {
+      fetchChartData(selectedDevice, 48);
+    } else if (time === "2") {
+      fetchChartData(selectedDevice, 336);
+    } else if (time === "3") {
+      fetchChartData(selectedDevice, 1440);
+    }
+  }, [selectedDevice, time]);
 
-  const seriesSmall = [
-    {
-      name: "PH",
-      data: seriesPH,
-    },
-  ];
-  const optionsSmall = {
-    chart: {
-      id: "ig",
-      group: "social",
-      type: "area",
-    },
-    colors: ["#008FFB"],
-    xaxis: {
-      type: "datetime",
-      min: arrayTime[0],
-      tickAmount: 6,
-    },
-    zoom: {
-      type: "x",
-      enabled: true,
-      autoScaleYaxis: true,
-    },
-    toolbar: {
-      autoSelected: "zoom",
-    },
-  };
-
-  const seriesSmall2 = [
-    {
-      name: "TDS",
-      data: seriesTDS,
-    },
-  ];
-  const optionsSmall2 = {
-    chart: {
-      id: "li",
-      group: "social",
-      type: "area",
-    },
-    colors: ["#b37700"],
-    xaxis: {
-      type: "datetime",
-      min: arrayTime[0],
-      tickAmount: 6,
-    },
-    zoom: {
-      type: "x",
-      enabled: true,
-      autoScaleYaxis: true,
-    },
-    toolbar: {
-      autoSelected: "zoom",
-    },
-  };
-  const options = [
+  const timeOptions = [
     { value: "1", label: "1 day" },
     { value: "2", label: "1 week" },
     { value: "3", label: "1 month" },
@@ -177,23 +255,26 @@ const Statistics = () => {
   return (
     <>
       <div id="wrapper" className="wrapper">
-        <Select
-          options={optionsDevice}
-          className="selecttime"
-          placeholder={<div>{selectDevice}</div>}
-          onChange={OnChangeDevice}
-        />
-        <Select
-          options={options}
-          className="selecttime"
-          placeholder={<div>1 day</div>}
-          onChange={onChange}
-        />
+        <div className="select">
+          <Select
+            options={optionsDevice}
+            className="selecttime"
+            placeholder={<div>{labelDevice}</div>}
+            onChange={OnChangeDevice}
+          />
+          <Select
+            options={timeOptions}
+            className="selecttime"
+            placeholder={<div>1 day</div>}
+            onChange={onChange}
+          />
+        </div>
+
         <div className="chart-time-series">
           <div id="chart-small" className="timeseries">
             <ReactApexChart
-              options={optionsSmall}
-              series={seriesSmall}
+              options={chartData.optionsPhChart}
+              series={chartData.seriesPHChart}
               type="area"
               height={170}
               width={1040}
@@ -202,8 +283,8 @@ const Statistics = () => {
           </div>
           <div id="chart-small2" className="timeseries">
             <ReactApexChart
-              options={optionsSmall2}
-              series={seriesSmall2}
+              options={chartData.optionsTDSChart}
+              series={chartData.seriesTDSChart}
               type="area"
               height={170}
               width={1040}
@@ -214,8 +295,8 @@ const Statistics = () => {
           <div>
             <div id="chart-area" className="timeseries">
               <ReactApexChart
-                options={optionsArea}
-                series={seriesArea}
+                options={chartData.optionsTemperature}
+                series={chartData.seriesTemperature}
                 type="area"
                 height={170}
                 width={1040}

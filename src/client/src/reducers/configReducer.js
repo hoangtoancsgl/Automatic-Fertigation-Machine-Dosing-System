@@ -3,25 +3,25 @@ import {
   CONFIGDATA_LOADED_SUCCESS,
   ADD_CONFIGDATA,
 } from "../contexts/constants";
-export const configReducer = (config, action) => {
-  const { configData, payload } = action;
-  switch (configData) {
+export const configReducer = (configdata, action) => {
+  const { type, payload } = action;
+  switch (type) {
     case CONFIGDATA_LOADED_SUCCESS:
       return {
-        ...config,
+        ...configdata,
         currentConfig: payload,
       };
     case CONFIGDATA_LOADED_FAIL:
       return {
-        ...config,
+        ...configdata,
         currentConfig: [],
       };
     case ADD_CONFIGDATA:
       return {
-        ...config,
-        // currentConfig: [...config.currentConfig, payload],
+        ...configdata,
+        currentConfig: payload,
       };
     default:
-      return config;
+      return configdata;
   }
 };

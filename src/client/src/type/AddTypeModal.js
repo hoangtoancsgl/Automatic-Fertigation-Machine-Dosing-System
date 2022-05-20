@@ -79,7 +79,7 @@ const AddTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
-              placeholder="TDS dead value"
+              placeholder="TDS threshold value"
               name="dead_TDS"
               value={dead_TDS}
               onChange={onChangeNewTypeForm}
@@ -99,7 +99,7 @@ const AddTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
-              placeholder="PH dead value"
+              placeholder="PH threshold value"
               name="dead_PH"
               value={dead_PH}
               onChange={onChangeNewTypeForm}

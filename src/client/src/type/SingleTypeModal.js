@@ -39,11 +39,11 @@ const SingleTypeModal = ({
       <div className="dead-tds-ph">
         <div className="dead_TDSSetting">
           <img src={deadTDS}></img>
-          <div className="dead_TDS_title">dead_TDS: {dead_TDSModal}</div>
+          <div className="dead_TDS_title">TDS threshold: {dead_TDSModal}</div>
         </div>
         <div className="dead_PHSetting">
           <img src={deadPHImg}></img>
-          <div className="dead_PH_title"> dead_PH: {dead_PHModal}</div>
+          <div className="dead_PH_title">PH threshold: {dead_PHModal}</div>
         </div>
       </div>
     </div>

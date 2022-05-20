@@ -16,9 +16,11 @@ const setVolumeRoutes = require("./routes/setVolumeRoutes");
 const configDataRoutes = require("./routes/configDataRoutes");
 const deviceRoutes = require("./routes/deviceRoutes");
 const stateRoutes = require("./routes/stateRoutes");
-const { collection } = require("./models/users");
+const newDeviceRoutes = require("./routes/newDeviceRoutes");
+
 const moment = require("moment-timezone");
 const typeModalRoutes = require("./routes/typeModelRoutes");
+const returnAckRoutes = require("./routes/returnAckRoutes");
 
 /*------------------------------Api---------------------*/
 
@@ -68,6 +70,10 @@ app.use("/api/setvolume", setVolumeRoutes);
 app.use("/api/changenutri", changeNutriRoutes);
 
 app.use("/api/typemodal", typeModalRoutes);
+
+app.use("api/newdevice", newDeviceRoutes);
+
+app.use("api/returnack", returnAckRoutes);
 
 /*-------------------- subcribe MQTT-----------------------*/
 program
@@ -557,6 +563,7 @@ client.on("message", (topic, payload) => {
   let device = topic.split("/");
   var regex = /[+-]?\d+(\.\d+)?/g;
   let data = payload.toString().match(regex);
+  let ack = payload.toString();
   if (device[2] === "status") {
     saveState(device[1], payload.toString());
   } else if (device[2] === "data") {
@@ -593,10 +600,65 @@ client.on("message", (topic, payload) => {
         Base_So,
         ChangeNutri
       );
+      const string = "hoangtoancsgl/" + device[1] + "/data";
+      client.publish(string, "ok", { qos: 0, retain: false }, (error) => {
+        if (error) {
+          console.error(error);
+        }
+      });
+    }
+  } else if (device[2] === "config") {
+    if (ack == "ok") {
+      updateAck(device[1]);
     }
   }
 });
-
+function updateAck(deviceId) {
+  MongoClient.connect(
+    process.env.DB_URL,
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      socketTimeoutMS: 30000,
+      keepAlive: true,
+    },
+    (err, db) => {
+      if (err) throw err;
+      const dbo = db.db("test");
+      dbo.collection("devices").findOne({ device: deviceId }, (error, res) => {
+        dbo
+          .collection("returnacks")
+          .findOne({ device: deviceId }, (error, responce) => {
+            if (responce == null) {
+              const myobj = {
+                device: deviceId,
+                replyAck: "ok",
+                user: res.user,
+                createdAt: Date.now(),
+              };
+              dbo.collection("returnacks").insertOne(myobj, (error, res) => {
+                if (error) throw error;
+              });
+            } else {
+              const myobj = {
+                $set: {
+                  device: deviceId,
+                  replyAck: "ok",
+                  user: res.user,
+                  createdAt: Date.now(),
+                },
+              };
+              dbo
+                .collection("returnacks")
+                .findOneAndUpdate({ device: deviceId }, myobj, (error, res) => {
+                  if (error) throw error;
+                });
+            }
+          });
+      });
+    }
+  );
+}
 /*---------------------------socket-io-------------------------*/
 
 const io = require("socket.io")(5200, {
@@ -620,9 +682,6 @@ const getUser = (userId) => {
 const removeUser = (socketId) => {
   users = users.filter((user) => user.socketId !== socketId);
 };
-
-// get last data
-const getlastdata = function (userID) {};
 
 io.on("connection", (socket) => {
   // connect

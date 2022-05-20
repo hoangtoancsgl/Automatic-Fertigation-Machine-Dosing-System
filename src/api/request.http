@@ -30,6 +30,17 @@ Content-Type: application/json
   "username": "trandung",
   "password": "1124"
 }
+###
+
+GET http://localhost:5000/api/newdevice
+
+###
+POST http://localhost:5000/api/newdevice
+Content-Type: application/json
+
+{
+  "device":"083af252956d"
+}
 
 //postdata
 ###
@@ -66,6 +77,10 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
 GET http://localhost:5000/api/setvolume
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
 
+###
+
+GET http://localhost:5000/api/totalvolume
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzMzk2Mjd9.N7plSVNvYXu7NnEXTjIy8l80RcRxdqPXsEgWYGj8DnI
 //post setvolume
 ###
 POST http://localhost:5000/api/totalvolume
@@ -74,11 +89,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
 
 {
   "device":"58bf251706a0", 
-  "Nutri_A":"0", 
-  "Nutri_B":"40", 
-  "Water":"20", 
-  "Acid_So":"30", 
-  "Base_So":"50" 
+  "replyAck":"ok"
 }
 
 ###
@@ -103,8 +114,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
   "nutri_RatioModal":"1"
 }
 ###
-GET http://localhost:5000/api/data/chart
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+GET http://localhost:5000/api/data/chart/083af2529f4c/15
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTI4NTI0ODh9.JIYEMQkAiO-MAwwq9XPv9IfmLAFslNxJWMH2z-pJR58
+
+###
+GET http://localhost:5000/api/data/chart/083af2/97
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MjY1MGUzY2FiOWQ0MDJjMTAzZTRiZGUiLCJpYXQiOjE2NTI4NTE4MzN9.-mUieYHQGbwi-qvOB_-lNDU0Gx7kyEyi0-8x5fHH8AQ
+
 
 ###
 PUT http://localhost:5000/api/setvolume/627cb55140b79c4f6b70b15b
@@ -119,10 +135,18 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZ
   "Acid_So_full":"30", 
   "Base_So_full":"50" 
 }
-
 ###
-GET http://localhost:5000/api/totalvolume
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTIzNTUxODZ9.M0NCSW0hSvan1YCS0Chfd72mS4dFqXonU_R032WCBZc
+POST http://localhost:5000/api/device/returnack
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTI5NTQyMTd9.i-YvqekA7CN7u7jNaE6t0RZRUaMg3CIl-Ty3D9pUARE
+
+{
+  "device":"58bf251706a0", 
+  "returnAck":"ok"
+}
+###
+GET http://localhost:5000/api/returnack
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWMzZjIyODEzZDk1ZjBiOWY0OTFjMzEiLCJpYXQiOjE2NTI5NTMzNzV9.tE5P11NFK5iBdjZkwVPycyIYrxyjDybXE6ly5dQ0m8g
 
 
 ###

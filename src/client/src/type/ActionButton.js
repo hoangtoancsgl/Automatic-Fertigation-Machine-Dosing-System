@@ -5,7 +5,7 @@ import selectButton from "../assets/selectButton.png";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import { TypeContext } from "../contexts/TypeContext";
 import { useContext, useEffect, useState } from "react";
-import { DataContext } from "../contexts/DataContext";
+//import { DataContext } from "../contexts/DataContext";
 import { ConfigContext } from "../contexts/ConfigContext";
 
 const ActionButtons = ({ _id, selectedDevice }) => {
@@ -13,7 +13,7 @@ const ActionButtons = ({ _id, selectedDevice }) => {
     typeState: { configtype },
     updateConfigType,
   } = useContext(TypeContext);
-  console.log(selectedDevice);
+
   const { configManual } = useContext(ConfigContext);
 
   const { deleteConfigType, findConfigType, setShowUpdateTypeModal } =

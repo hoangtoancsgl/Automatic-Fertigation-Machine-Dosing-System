@@ -4,10 +4,12 @@ const verifyToken = require("../middleware/auth");
 
 const configData = require("../models/configData");
 const configType = require("../models/configType");
-// @route GET api/config_data
+const returnAck = require("../models/returnAck");
+
+// @route  GET api/config_data
 // @Get the last data
 // @access private
-
+const delay = (time) => new Promise((res) => setTimeout(res, time));
 router.get("/:device", verifyToken, async (req, res) => {
   try {
     const getLastConfigData = await configData
@@ -39,6 +41,10 @@ router.get("/:device", verifyToken, async (req, res) => {
 router.post("/", verifyToken, async (req, res) => {
   const { device, type, TDS, dead_TDS, PH, dead_PH, nutri_Ratio } = req.body;
   try {
+    const returnAckOld = await returnAck
+      .findOne({ user: req.userId, device: device })
+      .sort({ _id: -1 })
+      .limit(1);
     const newadjust = new configData({
       device,
       TDS,
@@ -50,14 +56,34 @@ router.post("/", verifyToken, async (req, res) => {
       user: req.userId,
     });
     await newadjust.save();
-    res.json({
-      success: true,
-      message: "New updates success",
-      post: newadjust,
-    });
+    await delay(1000);
+    const returnAckNew = await returnAck
+      .findOne({ user: req.userId, device: device })
+      .sort({ _id: -1 })
+      .limit(1);
+    console.log(returnAckOld);
+    console.log(returnAckNew);
+    if (returnAckOld.createdAt !== returnAckNew.createdAt) {
+      console.log("goood");
+      res.json({
+        success: true,
+        message: "New updates success",
+        post: newadjust,
+      });
+    } else {
+      console.log("baaddd");
+      await configData
+        .findOneAndDelete({ user: req.userId, device: device })
+        .sort({ _id: -1 })
+        .limit(1);
+      res.json({
+        success: false,
+        message: "Transmit data fault",
+      });
+    }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: "Device didn't responce" });
   }
 });
 

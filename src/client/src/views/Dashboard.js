@@ -69,7 +69,7 @@ const Dashboard = () => {
     value = { value: deviceData[i].device, label: `Device ${i + 1}` };
     optionsDevice.push(value);
   }
-  console.log(optionsDevice);
+
   const [selectDevice, setselectDevice] = useState("Device 1");
   // //get last data
   useEffect(() => getDevice(), []);
@@ -83,7 +83,6 @@ const Dashboard = () => {
   for (let i = 0; i < deviceData.length; i++) {
     if (selectDevice === optionsDevice[i].label) {
       selectedDevice = deviceData[i].device;
-      //console.log(selectedDevice);
     }
   }
   useEffect(() => getData(selectedDevice), [selectedDevice]);
@@ -115,15 +114,6 @@ const Dashboard = () => {
       setStatus(sendState);
     });
   }, [username]);
-
-  let state_style;
-  if (state === "offline") {
-    state_style = { backgroundColor: "grey" };
-  } else if (state === "online") {
-    state_style = { backgroundColor: "#4d94ff" };
-  }
-
-  var nutriA = Nutri_A_full - Nutri_A;
   var rounded;
   function getPercent(value_full, value) {
     var num = 0;
@@ -150,21 +140,26 @@ const Dashboard = () => {
   if (Base_left < 0) Base_left = 0;
   if (Acid_left < 0) Acid_left = 0;
 
-  // } else Nutri_A_left = Nutri_A_full - Nutri_A;
-  // if (Nutri_B_left < 0) Nutri_B_left = 0;
-  // if (Acid_left < 0) Acid_left = 0;
-  // if (Base_left < 0) Base_left = 0;
-  // console.log(Nutri_A_percent);
+  let state_style;
+  if (state === "offline") {
+    state_style = { backgroundColor: "grey" };
+  } else if (state === "online") {
+    state_style = { backgroundColor: "#4d94ff" };
+  }
+
   return (
     <>
       <main>
         <small className="text-mute">Last Time Update: {createdAt}</small>
-        <Select
-          options={optionsDevice}
-          className="selecttime"
-          placeholder={<div>{selectDevice}</div>}
-          onChange={OnChangeDevice}
-        />
+        <div className="select">
+          <Select
+            options={optionsDevice}
+            className="selecttime"
+            placeholder={<div>{selectDevice}</div>}
+            onChange={OnChangeDevice}
+          />
+        </div>
+
         <h1 className="machine-current-state-tag">
           Current value at dosing machine
         </h1>

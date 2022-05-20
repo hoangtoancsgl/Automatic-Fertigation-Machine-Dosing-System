@@ -15,7 +15,6 @@ import { io } from "socket.io-client";
 import Button from "react-bootstrap/Button";
 import Tooltip from "react-bootstrap/Tooltip";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import ActionButtons from "../type/ActionButton";
 import addButton from "../assets/addButton.png";
 import SingleType from "../type/SingleType";
 import SingleTypeModal from "../type/SingleTypeModal";
@@ -28,14 +27,7 @@ import Select from "react-select";
 import Toast from "react-bootstrap/Toast";
 
 const Device = () => {
-  // const {
-  //   dataState: {
-  //     data: { device },
-  //   },
-  //   getData,
-  // } = useContext(DataContext);
-
-  const [data, setData] = useState({ data: [] });
+  // const [data, setData] = useState({ data: [] });
 
   const {
     typeState: { configtype, config, configLoading },
@@ -50,8 +42,9 @@ const Device = () => {
       currentConfig: { type, TDS, dead_TDS, PH, dead_PH, nutri_Ratio },
     },
     getConfigData,
+    currentConfig,
   } = useContext(ConfigContext);
-
+  console.log(currentConfig);
   const {
     typeModalState: { typeModal },
     getTypeModal,
@@ -101,19 +94,19 @@ const Device = () => {
       selectedDevice = deviceData[i].device;
     }
   }
-  // console.log(selectedDevice);
+
   /*-----------------------------------------*/
-  // useEffect(() => getData(), []);
+
   useEffect(() => getConfigData(selectedDevice), [selectedDevice]);
   useEffect(() => getConfigType(), []);
   useEffect(() => getTypeModal(), []);
   useEffect(() => getSetVolume(selectedDevice), [selectedDevice]);
   // add device
 
-  const { addDevices } = useContext(DataContext);
+  const { addDevices } = useContext(DeviceContext);
 
   const [newDevice, setNewDevice] = useState({
-    device: "",
+    device: " ",
   });
 
   const { deviceID } = newDevice;
@@ -196,8 +189,7 @@ const Device = () => {
     });
     socket.current.emit("getConfig", user._id);
     socket.current.on("sendConfig", (configManual) => {
-      console.log(configManual);
-      setData(configManual);
+      // setData(configManual);
     });
   }, [username]);
 
@@ -209,15 +201,12 @@ const Device = () => {
     value = { value: config[i]._id, label: config[i].type };
     options.push(value);
   }
-
   const [selectTypePersonalState, setSelectTypePersonalState] = useState("");
   const onChangePersonal = (event) => setSelectTypePersonalState(event.value);
   let body12 = null;
   if (options !== null) {
     for (let i = 0; i < config.length; i++) {
       if (options[i].value === selectTypePersonalState) {
-        console.log(selectedDevice);
-        console.log(config[i]);
         body12 = (
           <SingleType
             config={
@@ -598,12 +587,15 @@ const Device = () => {
     <>
       <div className="main">
         <div className="config">
-          <Select
-            options={optionsDevice}
-            className="selecttime"
-            placeholder={<div>{selectDevice}</div>}
-            onChange={OnChangeDevice}
-          />
+          <div className="select">
+            <Select
+              options={optionsDevice}
+              className="selecttime"
+              placeholder={<div>{selectDevice}</div>}
+              onChange={OnChangeDevice}
+            />
+          </div>
+
           <div className="title-new-vegetable">Current setting is {type}</div>
 
           <div>

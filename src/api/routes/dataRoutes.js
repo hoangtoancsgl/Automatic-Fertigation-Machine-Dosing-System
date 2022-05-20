@@ -35,23 +35,56 @@ router.get("/:device", verifyToken, async (req, res) => {
 // @route GET api/chart
 // @Get last 5 datas
 // @access private
-router.get("/chart/:device", verifyToken, async (req, res) => {
+router.get("/chart/:device/:time", verifyToken, async (req, res) => {
+  const arrayTemp = [];
+  const arrayTDS = [];
+  const arrayPH = [];
+  const arrayTime = [];
+  let seriesTemp = [];
+  let seriesTDS = [];
+  let seriesPH = [];
   try {
-    const getalldata = await data
+    const getChart = await data
       .find({ user: req.userId, device: req.params.device })
+
       .sort({ _id: -1 })
-      .limit(1440);
-    if (getalldata === null) {
+      .limit(req.params.time);
+    const getFullDataChart = await data.find({
+      user: req.userId,
+      device: req.params.device,
+    });
+    // console.log(getFullDataChart.length);
+    if (Object.keys(getChart).length === 0) {
+      console.log(Object.keys(getChart).length);
+      var getalldata = [seriesTemp, seriesTDS, seriesPH];
       res.json({
         success: true,
-        getalldata: {
-          temperature: 0,
-          TDS: 0,
-          PH: 0,
-          user: req.userId,
-        },
+        getalldata,
       });
-    } else res.json({ success: true, getalldata });
+    } else {
+      let x = req.params.time;
+      if (getFullDataChart.length < req.params.time)
+        x = getFullDataChart.length;
+      console.log(x);
+      for (let j = 0; j < x; j++) {
+        var date = new Date(getChart[j].createdAt);
+        arrayTime.push(date.getTime());
+        arrayTemp.push(getChart[j].temperature * 1);
+        arrayTDS.push(getChart[j].TDS * 1);
+        arrayPH.push(getChart[j].PH * 1);
+      }
+      var values = [arrayTemp, arrayTDS, arrayPH, arrayTime];
+      var i = 0;
+      while (i < x) {
+        seriesTemp.push([values[3][i], values[0][i]]);
+        seriesTDS.push([values[3][i], values[1][i]]);
+        seriesPH.push([values[3][i], values[2][i]]);
+        i++;
+      }
+      var getalldata = [seriesTemp, seriesTDS, seriesPH, arrayTime];
+      // console.log(getalldata);
+      res.json({ success: true, getalldata });
+    }
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: "Internal server error" });

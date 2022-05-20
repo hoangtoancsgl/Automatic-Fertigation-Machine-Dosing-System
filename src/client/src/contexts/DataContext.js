@@ -1,13 +1,6 @@
 import { createContext, useReducer, useState } from "react";
 import { dataReducer } from "../reducers/dataReducer";
-import {
-  url,
-  DATA_LOADED_FAIL,
-  DATA_LOADED_SUCCESS,
-  ADD_DEVICE,
-  STATE_LOADED_FAIL,
-  STATE_LOADED_SUCCESS,
-} from "./constants";
+import { url, DATA_LOADED_FAIL, DATA_LOADED_SUCCESS } from "./constants";
 import axios from "axios";
 
 export const DataContext = createContext();

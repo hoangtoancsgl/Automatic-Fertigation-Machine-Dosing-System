@@ -1,6 +1,5 @@
 import { createContext, useReducer, useState } from "react";
 import { typeReducer } from "../reducers/typeReducer";
-import { configReducer } from "../reducers/configReducer";
 import {
   url,
   CONFIGTYPE_LOADED_SUCCESS,
@@ -9,9 +8,6 @@ import {
   DELETE_CONFIGTYPE,
   FIND_CONFIGTYPE,
   UPDATE_CONFIGTYPE,
-  ADD_CONFIGDATA,
-  CONFIGDATA_LOADED_SUCCESS,
-  CONFIGDATA_LOADED_FAIL,
 } from "./constants";
 import axios from "axios";
 export const TypeContext = createContext();

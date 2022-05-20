@@ -20,7 +20,7 @@ const ConfigContextProvider = ({ children }) => {
       const response = await axios.post(`${url}/configdata`, newConfig);
       if (response.data.success) {
         dispatchConfig({
-          configData: ADD_CONFIGDATA,
+          type: ADD_CONFIGDATA,
           payload: response.data.post,
         });
         return response.data;
@@ -38,12 +38,12 @@ const ConfigContextProvider = ({ children }) => {
       const responce = await axios.get(`${url}/configdata/${device}`);
       if (responce.data.success) {
         dispatchConfig({
-          configData: CONFIGDATA_LOADED_SUCCESS,
+          type: CONFIGDATA_LOADED_SUCCESS,
           payload: responce.data.getLastConfigData,
         });
       }
     } catch (error) {
-      dispatchConfig({ configData: CONFIGDATA_LOADED_FAIL });
+      dispatchConfig({ type: CONFIGDATA_LOADED_FAIL });
     }
   };
   const configContextData = {

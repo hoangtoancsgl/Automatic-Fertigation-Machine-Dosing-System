@@ -19,6 +19,7 @@ export const deviceReducer = (devic, action) => {
     case ADD_DEVICE:
       return {
         ...devic,
+        deviceData: [...devic.deviceData, payload],
       };
 
     default:
