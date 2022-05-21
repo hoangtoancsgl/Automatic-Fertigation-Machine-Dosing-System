@@ -3,7 +3,7 @@ import logo from "../assets/logo.png";
 const About = () => {
   return (
     <div className="About">
-      <div className="navbar">
+      <div className="navbar1">
         <img src={logo} className="logo" />
         <small className="universityTag">
           Ho Chi Minh

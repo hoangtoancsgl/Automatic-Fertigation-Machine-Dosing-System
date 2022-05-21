@@ -35,8 +35,6 @@ const Dashboard = () => {
   const {
     dataState: {
       data: { temperature, TDS, PH, createdAt },
-
-      dataLoading,
     },
     getData,
   } = useContext(DataContext);
@@ -62,7 +60,7 @@ const Dashboard = () => {
     },
     getTotalVolume,
   } = useContext(TotalVolumeContext);
-
+  useEffect(() => getDevice(), []);
   var optionsDevice = [];
   for (let i = 0; i < deviceData.length; i++) {
     let value = [];
@@ -72,19 +70,21 @@ const Dashboard = () => {
 
   const [selectDevice, setselectDevice] = useState("Device 1");
   // //get last data
-  useEffect(() => getDevice(), []);
 
   const OnChangeDevice = (event) => {
     setselectDevice(event.label);
   };
   console.log(selectDevice);
   var selectedDevice;
-
+  let bodyLabelDevice = null;
+  console.log(deviceData);
   for (let i = 0; i < deviceData.length; i++) {
     if (selectDevice === optionsDevice[i].label) {
       selectedDevice = deviceData[i].device;
+      bodyLabelDevice = deviceData[i].name;
     }
   }
+  console.log(bodyLabelDevice);
   useEffect(() => getData(selectedDevice), [selectedDevice]);
   useEffect(() => getStatus(selectedDevice), [selectedDevice]);
   useEffect(() => getTotalVolume(selectedDevice), [selectedDevice]);
@@ -151,6 +151,7 @@ const Dashboard = () => {
     <>
       <main>
         <small className="text-mute">Last Time Update: {createdAt}</small>
+        <div className="deviceName">Name of device: {bodyLabelDevice}</div>
         <div className="select">
           <Select
             options={optionsDevice}
@@ -165,6 +166,16 @@ const Dashboard = () => {
         </h1>
         <div className="insights">
           <div className="PH-TDS">
+            <div className="temperature">
+              <img src={tempIcon} className="icon-sen" />
+              <div className="middle">
+                <div className="left">
+                  <h3>Temperature</h3>
+                  <h1>{temperature} </h1>
+                  <small className="text-muted">°C</small>
+                </div>
+              </div>
+            </div>
             <div className="PH">
               <img src={PHicon} className="icon-sen" />
               <div className="middle">
@@ -172,28 +183,17 @@ const Dashboard = () => {
                   <h3>PH</h3>
                   <h1>{PH}</h1>
                 </div>
-                <small className="text-muted">Time update</small>
-              </div>
-            </div>
-            <div className="TDS">
-              <img src={tdsIcon} className="icon-sen" />
-              <div className="middle">
-                <div className="left">
-                  <h3>TDS</h3>
-                  <h1>{TDS}</h1>
-                </div>
-                <small className="text-muted">PPM</small>
               </div>
             </div>
           </div>
           <div className="temperature">
-            <img src={tempIcon} className="icon-sen" />
+            <img src={tdsIcon} className="icon-sen" />
             <div className="middle">
               <div className="left">
-                <h3>Temperature</h3>
-                <h1>{temperature} </h1>
-                <small className="text-muted">°C</small>
+                <h3>TDS</h3>
+                <h1>{TDS}</h1>
               </div>
+              <small className="text-muted">PPM</small>
             </div>
           </div>
         </div>
@@ -315,11 +315,11 @@ const Dashboard = () => {
               <div className="dosingmachine">
                 <img src={dosingmachine} className="icon-device" />
                 <div className="status-circle" style={state_style}></div>
-                <div className="string">
+                {/* <div className="string">
                   Dosing <br />
                   Machine
-                </div>
-                <h2>State : {state}</h2>
+                </div> */}
+                <h2 className="stateTag">Status : {state}</h2>
               </div>
             </div>
           </div>

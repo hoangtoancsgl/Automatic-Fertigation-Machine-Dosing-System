@@ -95,10 +95,12 @@ const Statistics = () => {
     value = { value: deviceData[i].device, label: `Device ${i + 1}` };
     optionsDevice.push(value);
   }
-
+  const [bodyLabelDevice, setbodyLabelDevice] = useState("");
+  //let bodyLabelDevice = null;
   for (let i = 0; i < deviceData.length; i++) {
     if (selectedDevice === optionsDevice[i].label) {
       setSelectedDevice(deviceData[i].device);
+      setbodyLabelDevice(deviceData[i].name);
     }
   }
   console.log(selectedDevice);
@@ -255,19 +257,22 @@ const Statistics = () => {
   return (
     <>
       <div id="wrapper" className="wrapper">
-        <div className="select">
-          <Select
-            options={optionsDevice}
-            className="selecttime"
-            placeholder={<div>{labelDevice}</div>}
-            onChange={OnChangeDevice}
-          />
-          <Select
-            options={timeOptions}
-            className="selecttime"
-            placeholder={<div>1 day</div>}
-            onChange={onChange}
-          />
+        <div>
+          <div className="deviceName">Name of device: {bodyLabelDevice}</div>
+          <div className="select">
+            <Select
+              options={optionsDevice}
+              className="selecttime"
+              placeholder={<div>{labelDevice}</div>}
+              onChange={OnChangeDevice}
+            />
+            <Select
+              options={timeOptions}
+              className="selecttime"
+              placeholder={<div>1 day</div>}
+              onChange={onChange}
+            />
+          </div>
         </div>
 
         <div className="chart-time-series">

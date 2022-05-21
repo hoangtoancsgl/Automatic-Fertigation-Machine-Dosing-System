@@ -6,6 +6,7 @@ import AuthContextProvider from "./contexts/AuthContext";
 import Dashboard from "./views/Dashboard";
 import ProtectedRoute from "./components/routing/ProtectedRoute";
 import About from "./views/About";
+import AboutAuthor from "./views/AboutAuthor";
 import Device from "./views/Device";
 import Statistics from "./views/Statistics";
 import DataContextProvider from "./contexts/DataContext";
@@ -64,6 +65,11 @@ function App() {
                             exact
                             path="/statistics"
                             component={Statistics}
+                          />
+                          <Route
+                            exact
+                            path="/aboutauthor"
+                            component={AboutAuthor}
                           />
                         </Switch>
                       </Router>

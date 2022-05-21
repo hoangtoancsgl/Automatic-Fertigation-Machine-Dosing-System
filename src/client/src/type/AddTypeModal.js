@@ -52,6 +52,7 @@ const AddTypeModal = () => {
       <Form onSubmit={onSubmit}>
         <Modal.Body>
           <Form.Group className="addType">
+            <div>Type</div>
             <Form.Control
               type="text"
               placeholder="Type"
@@ -66,9 +67,12 @@ const AddTypeModal = () => {
             </Form.Text>
           </Form.Group>
           <Form.Group className="addType">
+            <div>TDS value</div>
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              required
               placeholder="TDS value"
               name="TDS"
               value={TDS}
@@ -76,9 +80,12 @@ const AddTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>TDS threshold value</div>
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              required
               placeholder="TDS threshold value"
               name="dead_TDS"
               value={dead_TDS}
@@ -86,9 +93,13 @@ const AddTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>PH value</div>
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="14"
+              required
               placeholder="PH value"
               name="PH"
               value={PH}
@@ -96,9 +107,13 @@ const AddTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>PH threshold value</div>
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="14"
+              required
               placeholder="PH threshold value"
               name="dead_PH"
               value={dead_PH}
@@ -106,9 +121,13 @@ const AddTypeModal = () => {
             />
           </Form.Group>
           <Form.Group className="addType">
+            <div>Nutri ratio value</div>
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="1"
+              required
               placeholder="Nutri ratio value"
               name="nutri_Ratio"
               value={nutri_Ratio}

@@ -27,10 +27,15 @@
   --padding-i: 1.2rem;
 
   --box-shadow: 0 2rem 3rem var(--color-light);
+
+  --color-font-device-page:#fff;
 }
 /* -------------  middle----------------- */
 .main {
-  background: #e0e0d1;
+  padding: 0.5rem;
+  background-image: url(../assets/backgoundDevice.jpg);
+  /* background-repeat: no-repeat; */
+  /* background-size: auto; */
   margin-top: 20px;
   margin-left: 10px;
   margin-right: 10px;
@@ -64,14 +69,15 @@
 
 .nutriRatio {
   margin-top: 30px;
-
   margin-left: auto;
   margin-right: auto;
-  width: 38%;
+  width: 27%;
 }
 .nutriRatio h2 {
-  font-weight: 600;
+  text-align:center;
+  font-weight: 500;
   font-size: 15px;
+  color: var(--color-font-device-page);
 }
 
 .pH h2 {
@@ -110,15 +116,18 @@ input {
   box-sizing: border-box;
   transition: 0.5s;
 }
+
 .text {
+
   background: white;
-  width: 200px;
+  width: 180px;
   height: 40px;
   border: none;
   outline: none;
   padding: 0 25px;
   border-radius: 10px;
   font-weight: 300;
+  margin-bottom: 10px;
 }
 .message {
   text-align: center;
@@ -131,7 +140,7 @@ input {
   border: none;
   outline: none;
   cursor: pointer;
-  background: #ffc107;
+  background: #2667ff;
   color: #fff;
   display: block;
   margin-left: auto;
@@ -215,34 +224,6 @@ input {
 .typeSetting{
   font-weight: 300;
 }
-/* .singleType{
-  display: flex;
-  justify-content: space-between;
-  margin-top:17px;
-  margin-left: 15px;
-}
-.type-button{
-  margin-right: 8px;
-}
-.namevalue{
-  margin-left: 10px;
-} */
-/* .value{
-  display: grid;
-  grid-template-columns: 13.5rem  4.8rem 5.5rem 5.2rem 6rem  5rem;
-  margin: 1 auto;
-
-
-} */
-/* .valueName{
-  display: grid  ;
-  /* grid-template-columns: repeat(5, 1fr);
-  gap: 3.7rem; */
- 
-  /* width: 97%;
-  margin: 1 auto;
-  grid-template-columns: 13.3rem  4rem 7rem 3.5rem 6rem  5rem;
-} */ 
 
 .cirular-value{
   display: grid  ;
@@ -308,12 +289,12 @@ input {
   padding-right: 10px;
 }
 .GlobalTypeBox{
-  background: 	 #99e699;
+  background: 	 #f4f1de;
   border-radius: 10px;
   padding: 20px;
 }
 .PersonalTypeBox{
-  background: 	#99e699;
+  background: 	#f4f1de;
   border-radius: 10px;
   padding: 20px;
 }
@@ -329,3 +310,39 @@ input {
     
 }
 
+.deviceName1{
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 25px;
+  color: var(--color-font-device-page);
+}
+
+.titleGlobal-Personal{
+  margin-left: 10px;
+  color: var(--color-font-device-page);
+}
+
+.configManualTitle{
+  /* color: var(--color-font-device-page); */
+  
+}
+
+.PH-config h2{
+  color: var(--color-font-device-page);
+}
+
+.TDS-config h2{
+  
+  color: var(--color-font-device-page);
+}
+.boundingboxManual{
+  background: #dde7c7;
+  margin-top: 20px ;
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+  padding: 10px;
+  /* border: 3px solid green;*/
+  border-radius: 10px; 
+  
+}

@@ -22,7 +22,7 @@ router.get("/", verifyToken, async (req, res) => {
 // @your newadjust
 // @access private
 router.post("/", verifyToken, async (req, res) => {
-  const { device } = req.body;
+  const { device, name } = req.body;
   try {
     //Check for exsisting user
     const connectedDevice = await newDevices.findOne({ device });
@@ -51,6 +51,7 @@ router.post("/", verifyToken, async (req, res) => {
     }
     const newadjust = new devices({
       device,
+      name,
       user: req.userId,
     });
     await newadjust.save();

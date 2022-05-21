@@ -239,7 +239,8 @@ Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MjYzYzkzNDM5MTNjZTUxNDU2MzFkZjYiLCJpYXQiOjE2NTA3MDcxMjh9.N6KvXHwjcQc-cME8lWjTlsmYDVMtybW9kIf4kAkRl_U
 
 {
-  "device" : "083af2529f4c"
+  "device" : "58bf251706a0",
+  "name" : "vuon nha",
 }
 //get last data
 ###

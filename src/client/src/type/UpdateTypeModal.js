@@ -60,6 +60,8 @@ const UpdateTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              required
               placeholder="TDS value"
               name="TDS"
               value={TDS}
@@ -71,6 +73,8 @@ const UpdateTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              required
               placeholder="TDS threshold value"
               name="dead_TDS"
               value={dead_TDS}
@@ -82,6 +86,9 @@ const UpdateTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="14"
+              required
               placeholder="PH value"
               name="PH"
               value={PH}
@@ -93,6 +100,9 @@ const UpdateTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="14"
+              required
               placeholder="PH threshold value"
               name="dead_PH"
               value={dead_PH}
@@ -104,6 +114,9 @@ const UpdateTypeModal = () => {
             <Form.Control
               type="number"
               step="0.01"
+              min="0"
+              max="1"
+              required
               placeholder="Nutri ratio value"
               name="nutri_Ratio"
               value={nutri_Ratio}

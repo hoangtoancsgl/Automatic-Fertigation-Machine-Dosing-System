@@ -28,6 +28,9 @@
   --padding-i: 1.2rem;
 
   --box-shadow: 0 2rem 3rem var(--color-light);
+
+
+  --color-font-device-page:#fff;
 }
 
 * {
@@ -241,7 +244,7 @@ aside .sidebar .warningCount {
 
 /*-----------------dashboard------------*/
 main {
-  background: var(--color-background);
+  background: var(--color-background) ;
 
   margin-left: 10px;
   /* margin-right: 10px; */
@@ -368,7 +371,7 @@ main .insights .TDS {
 }
 
 .right .userPart .userDevice {
-  background: #adebad;
+  background: #6c96;
   margin-top: 20px;
   padding: var(--card-padding);
   border-radius: var(--card-border-radius);
@@ -376,9 +379,9 @@ main .insights .TDS {
 }
 
 .right .userPart .userDevice .devices {
-  display: grid;
+  /* display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.2rem;
+  gap: 1.2rem; */
   margin-top: 20px;
 }
 
@@ -393,13 +396,16 @@ main .insights .TDS {
 
 .icon-device {
   border-radius: 20%;
-  font-size: 2rem;
+
+  height: 150px;
+  width:150px;
+  margin-left: 30px;
 }
 
 .devices h2 {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 300;
-  margin-left: 18px;
+  margin-left: 53px;
   margin-top: 5px;
 }
 .status-circle {
@@ -408,9 +414,10 @@ main .insights .TDS {
   border-radius: 50%;
   border: 3px solid white;
   bottom: 20px;
-  right: -80px;
+  right: -160px;
   position: relative;
 }
+
 
 .string {
   text-align: center;
@@ -454,9 +461,11 @@ main .insights .TDS {
 }
 
 .title-new-vegetable{
+  color: var(--color-font-device-page);
   display: flex;
   justify-content: center;
   margin-bottom: 10px;
+  margin-top: 10px;
 }
 .button-new-vegetable{
   display: block;
@@ -490,7 +499,7 @@ main .insights .TDS {
   height: 200px;
   background: #fff;
   margin-left: 20px;
-  padding: 1.8rem;;
+  padding: 1.3rem;;
   border-radius: var(--card-border-radius);
 
 }
@@ -500,6 +509,11 @@ main .insights .TDS {
   font-weight: 300;
   display: flex;
   justify-content: center;
+  
+}
+.cirular-value{
+  margin-bottom: 20px;
+  margin-right:10px ;
 }
 
 .valueTag{
@@ -515,7 +529,7 @@ main .insights .TDS {
   display: flex;
   justify-content: center;
   margin-top: 20px;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .addType{
@@ -565,4 +579,10 @@ main .insights .TDS {
 
 .dead_PH_title{
   text-align:center;
+}
+
+.deviceName{
+  position: absolute;
+  margin-left: 20px;
+  margin-top: 25px;
 }

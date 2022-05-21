@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Manjari:wght@100;400&family=Roboto+Mono:wght@100&family=Roboto+Slab:wght@100;300;400;500;600;700;800&display=swap");
 
 * {
+  
   margin: 0;
   padding: 0;
   font-family: "Manjari", sans-serif;
@@ -19,17 +20,28 @@
 .logo {
   width: 40px;
   cursor: pointer;
-  margin: 10px 0px 1px;
+  margin: 18px 0px 1px;
+}
+.logoBK{
+  display: flex;
+  width: 50px;
+  cursor: pointer;
+  margin: 18px 40px 0px;
+}
+.logoBK h2{
+  margin-left: 10px;
+  margin-top: 20px;
+  font-size: 13px;
 }
 .universityTag {
   color: #ffffff;
   width: 95%;
   height: 50%;
   justify-content: left;
-  margin: 20px 0 3px;
+  margin: 20px 0 0px;
   font-size: 1;
 }
-.navbar {
+.navbar1 {
   width: 95%;
   height: 10%;
   margin: auto;
@@ -139,9 +151,7 @@ input[type="submit"]:hover {
   color: #000000;
 }
 
-.navbar{
-  display: flex;
-}
+
 /* button {
   color: #000000;
   padding: 10px 25px;

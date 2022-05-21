@@ -33,11 +33,11 @@ const NavbarMenu = () => {
     <div className="container-fluid">
       <aside>
         <div className="top">
-          <div className="logo">
+          <div className="logoBK">
             <img src={logo} />
-            <h2>Bach Khoa</h2>
+            <h2>HCMUT</h2>
           </div>
-          <div className="close" id="close-btn">
+          {/* <div className="close" id="close-btn">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="16"
@@ -55,7 +55,7 @@ const NavbarMenu = () => {
                 d="M2.146 2.146a.5.5 0 0 0 0 .708l11 11a.5.5 0 0 0 .708-.708l-11-11a.5.5 0 0 0-.708 0Z"
               />
             </svg>
-          </div>
+          </div> */}
         </div>
         <div className="sidebar">
           <a href="../dashboard" className="active">
@@ -139,7 +139,7 @@ const NavbarMenu = () => {
             <span className="warningCount">26</span>
           </a> */}
 
-          <a href="../">
+          <a href="../aboutauthor">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
