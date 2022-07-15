@@ -1,0 +1,52 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+body{
+    height: 100vh;
+    display: flex;
+    flex-direction:  column; 
+}
+body > div{
+    margin: auto;
+}
+.btn{
+    display: inline-block;
+    color: #ffff;
+    text-align: center;
+    font-weight: 900;
+    padding: 15px 48px;
+    min-width: 120px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.btn--size-l{
+    padding: 10px 20px;
+}
+.btn--size-s{
+    padding: 50px 60px;
+}
+.btn:hover{
+    opacity: 0.8;
+}
+.btn + btn{
+    margin-left: 5px;
+}
+.btn--success{
+    background-color: #71be34;
+
+}
+.btn--warn{
+    background-color: #f0ba25;
+
+}
+.btn--danger{
+    background-color: #d8261e;
+
+}
+.btn--disabled{
+    opacity: 0.5 !important;
+    cursor: default;
+}

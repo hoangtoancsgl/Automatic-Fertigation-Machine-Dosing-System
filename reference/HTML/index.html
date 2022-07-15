@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <!-- head -->
+    <link rel="stylesheet" href="main.css">
+    <!-- https://www.dungplus.com/wp-content/uploads/2019/12/girl-xinh-1.jpg -->
+    <head>
+        <title>Dosing System</title>
+        <meta charset="utf-8">
+    </head>
+    <script src="main.js"></script>
+    <style>
+        html, body{
+            margin: 0;
+        }
+
+    </style>
+    <body>
+        <!-- <div>
+            <div class="btn btn--success ">GO TO NETX PAGE</div>
+            <div class="btn btn--warn">TRY AGAIN</div>
+            <div class="btn btn--danger">OK</div>
+        </div>
+        <div>
+            <div class="btn btn--size-l btn--success ">GO TO NETX PAGE</div>
+            <div class="btn btn--size-l btn--warn">TRY AGAIN</div>
+            <div class="btn btn--size-l btn--danger">OK</div>
+        </div>
+        <div>
+            <div class="btn btn--size-s btn--success ">GO TO NETX PAGE</div>
+            <div class="btn btn--size-s btn--warn">TRY AGAIN</div>
+            <div class="btn btn--size-s btn--danger">OK</div>
+        </div> -->
+
+        <div class="piker-container">
+            <div class="row">
+                <h3>ESP32 Color Piker</h3>
+            </div>
+            <input class="jscolor {onFineChange: 'update(this)}" id="rgb">
+            <button onclick="chaneColor">Change</button>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.min.js">
+
+            function update(picker)
+            {
+                document.getElementById('rgb').innerHTML = Math.round(picker.rgb[0]) + ', ' + Math.round(picker.rgb[1]) + ', ' + Math.round(picker.rgb[2]);
+            }
+        </script>
+
+    </body>
+</html>

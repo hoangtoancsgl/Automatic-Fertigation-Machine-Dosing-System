@@ -1,0 +1,9 @@
+{
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "files.associations": {
+    "string.h": "c",
+    "cstring": "c",
+    "input_iot.h": "c",
+    "output_iot.h": "c"
+  }
+}
